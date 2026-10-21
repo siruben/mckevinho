@@ -78,9 +78,12 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
 
 .gate{text-align:center}
 .gk{font-size:30px;letter-spacing:6px;color:#f4b223}
-.gt{font-size:84px;line-height:.92;letter-spacing:2px;margin:6px 0 30px}
+.gt{font-size:84px;line-height:.92;letter-spacing:2px;margin:6px 0 24px}
 .gt span{color:#f4b223}
 .gb{font-size:28px;letter-spacing:5px;color:#ffd36b}
+.start-btn{display:inline-flex;align-items:center;justify-content:center;gap:12px;padding:14px 26px;border:3px solid var(--gold);border-radius:20px;background:linear-gradient(180deg,#3b1d0a,#120b09);color:#fff;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.45),0 0 0 4px rgba(244,178,35,.2);font:inherit;font-size:22px;letter-spacing:4px;line-height:1.2;transition:transform .12s ease, box-shadow .12s ease}
+.start-btn:active{transform:translateY(2px) scale(.99)}
+.start-btn .icon{display:inline-block;width:38px;height:38px;background-image:url('assets/brigadeiro.png');background-size:contain;background-repeat:no-repeat;background-position:center;filter:drop-shadow(0 4px 8px rgba(0,0,0,.35));}
 /* Telemóvel em vertical: o palco fica mais alto e estreito, HUD e painéis compactos */
 @media (pointer:coarse){.kb{display:none}}
 #rotate{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;
@@ -599,11 +602,17 @@ function ready() {
   state = 'menu'; show('sMenu'); $('bestMenu').textContent = best ? 'Melhor pontuação: ' + best : '';
   $('loading').innerHTML = '<div class="gate"><div class="gk">MC KEVINHO</div>' +
     '<div class="gt">CHUVA DE<br><span>BRIGADEIRO</span></div>' +
-    '<div class="blink gb">TOCA PARA ENTRAR</div></div>';
+    '<button id="startBtn" class="start-btn" type="button" aria-label="Entrar no jogo"><span class="icon" aria-hidden="true"></span><span>TOCA PARA ENTRAR</span></button></div>';
   $('loading').style.cursor = 'pointer';
+  const startBtn = $('startBtn');
+  if (startBtn) {
+    startBtn.addEventListener('click', enterGate);
+    startBtn.addEventListener('pointerdown', e => e.stopPropagation());
+  }
+  $('loading').addEventListener('click', e => {
+    if (e.target === $('loading')) enterGate();
+  });
   gateOpen = true;
-  $('loading').addEventListener('pointerdown', e => e.stopPropagation());
-  $('loading').addEventListener('click', enterGate);   // 'click' conta como gesto do utilizador no Android; 'pointerdown' não
   if (!running) { running = true; last = performance.now(); requestAnimationFrame(frame); }
 }
 
