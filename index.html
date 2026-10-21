@@ -82,34 +82,12 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
 .gt span{color:#f4b223}
 .gb{font-size:28px;letter-spacing:5px;color:#ffd36b}
 /* Telemóvel em vertical: o palco fica mais alto e estreito, HUD e painéis compactos */
-#wrap.narrow #scoreBox{left:12px;top:12px;min-width:0;padding:4px 12px 3px}
-#wrap.narrow #scoreBox b{font-size:30px}
-#wrap.narrow .pill small{font-size:11px;letter-spacing:1.5px}
-#wrap.narrow #lvlBox{top:12px;min-width:0;padding:4px 12px 3px}
-#wrap.narrow #lvlBox b{font-size:30px}
-#wrap.narrow #comboBox{left:12px;top:76px}
-#wrap.narrow #comboBox b{font-size:22px}
-#wrap.narrow #lives{right:12px;top:76px;gap:5px;padding:5px 8px}
-#wrap.narrow #lives img{width:30px}
-#wrap.narrow .ibtn{top:12px;width:46px;height:46px;font-size:20px}
-#wrap.narrow #btnPause{right:12px}
-#wrap.narrow #btnMute{right:64px}
-#wrap.narrow .panel{width:calc(100% - 28px);padding:20px 16px 22px;border-radius:20px}
-#wrap.narrow .kicker{font-size:16px;letter-spacing:4px}
-#wrap.narrow h1{font-size:54px;margin-bottom:10px}
-#wrap.narrow h2{font-size:48px}
-#wrap.narrow .panel p{font-size:16px}
-#wrap.narrow .how{font-size:13px;line-height:1.55;padding:8px 10px}
-#wrap.narrow .btn{font-size:28px;padding:10px 28px 8px}
-#wrap.narrow .btn.ghost{font-size:18px;margin-left:6px;padding:7px 18px 5px}
-#wrap.narrow .stats{gap:14px}
-#wrap.narrow .stats b{font-size:34px}
-#wrap.narrow .stats small{font-size:11px;letter-spacing:2px}
-#wrap.narrow .rec{font-size:18px}
-#wrap.narrow .gk{font-size:18px;letter-spacing:4px}
-#wrap.narrow .gt{font-size:54px;margin-bottom:22px}
-#wrap.narrow .gb{font-size:20px;letter-spacing:3px}
 @media (pointer:coarse){.kb{display:none}}
+#rotate{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  background:#07050a;text-align:center;padding:24px;font-size:32px;line-height:1.1;color:var(--gold2)}
+#rotate span{font-family:Arial,sans-serif;font-size:16px;color:#bbb}
+#rotate .ph{font-size:72px;animation:rot 1.8s ease-in-out infinite}
+@keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
 @keyframes blink{50%{opacity:.25}}
 .blink{animation:blink 1.2s infinite}
 #loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#07050a;z-index:9;font-size:28px;letter-spacing:4px;color:var(--gold)}
@@ -170,6 +148,8 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
 </div>
 
 
+<div id="rotate"><div class="ph">📱</div>RODA O TELEMÓVEL<span>O jogo só se joga na horizontal.</span></div>
+
 <script>
 (() => {
 'use strict';
@@ -218,10 +198,13 @@ load('stage', SRC.stage); load('kev', SRC.kev); load('brig', SRC.brig);
 // mais alto e estreito (432 de largura) num telemóvel em vertical. O cenário cobre tudo, alinhado em baixo.
 function resize() {
   const iw = window.innerWidth, ih = window.innerHeight;
-  const a = Math.max(0.38, Math.min(2.4, iw / ih));
+  const a = Math.max(1.2, Math.min(2.4, iw / ih));
   const oW = W, oH = H, wasNarrow = narrow;
-  H = Math.round(Math.max(720, 432 / a)); W = Math.round(H * a);
-  narrow = W < 700;
+  H = 720; W = Math.round(H * a);          // jogo só na horizontal
+  narrow = false;
+  const portrait = ih > iw;                // em vertical mostra o aviso e pausa
+  $('rotate').style.display = portrait ? 'flex' : 'none';
+  if (portrait && state === 'play') pauseGame();
   sc = Math.min(iw / W, ih / H);
   dpr = Math.min(window.devicePixelRatio || 1, 3);
   wrap.style.width = W + 'px'; wrap.style.height = H + 'px';
@@ -366,6 +349,13 @@ function playMusic(name, restart) {
 }
 function pauseMusic() { for (const k in MUS) MUS[k].pause(); }
 function resumeMusic() { if (curMusic) { const pr = MUS[curMusic].play(); if (pr && pr.catch) pr.catch(() => {}); } }
+// Se o browser recusou o arranque (sem gesto válido), tenta outra vez no próximo toque/tecla
+function retryMusic() {
+  if (!audioReady || !curMusic || curMusic === 'over' || state === 'pause') return;
+  const a = MUS[curMusic];
+  if (a.paused && !a.ended) { a.muted = muted; const pr = a.play(); if (pr && pr.catch) pr.catch(() => {}); }
+}
+['click', 'keydown', 'pointerup', 'touchend'].forEach(ev => window.addEventListener(ev, retryMusic, true));
 // Desbloqueia os sons que só vão tocar mais tarde (iOS/Android exigem um toque do utilizador)
 function unlockMusic() {
   ['game', 'over'].forEach(k => {
@@ -403,8 +393,8 @@ const kevTop = () => KEV_FEET - KEV_H;
 
 function difficulty() {
   return {
-    speed: Math.min(210 + (level - 1) * 32, 560) * (H / 720),
-    gap:   Math.max(1.05 - (level - 1) * 0.07, 0.42)
+    speed: Math.min(140 + (level - 1) * 38, 560),   // nível 1: lento; chega ao máximo no nível 12
+    gap:   Math.max(1.5 - (level - 1) * 0.1, 0.42)
   };
 }
 
@@ -580,10 +570,20 @@ function frame(now) {
 }
 
 let gateOpen = false;
+// Em telemóveis: ecrã inteiro + bloqueio na horizontal (na app instalada o manifesto já trata disto)
+function goLandscape() {
+  try {
+    const installed = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
+    const touch = matchMedia('(pointer: coarse)').matches;
+    const fs = (!installed && touch && document.documentElement.requestFullscreen)
+      ? document.documentElement.requestFullscreen({ navigationUI: 'hide' }) : Promise.resolve();
+    Promise.resolve(fs).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {});
+  } catch (e) {}
+}
 function enterGate() {
   if (!gateOpen) return;
   gateOpen = false; audioReady = true;
-  audioInit(); unlockMusic();
+  audioInit(); unlockMusic(); goLandscape();
   $('loading').style.display = 'none';
   toMenu();
 }
@@ -595,7 +595,8 @@ function ready() {
     '<div class="blink gb">TOCA PARA ENTRAR</div></div>';
   $('loading').style.cursor = 'pointer';
   gateOpen = true;
-  $('loading').addEventListener('pointerdown', e => { e.stopPropagation(); enterGate(); });
+  $('loading').addEventListener('pointerdown', e => e.stopPropagation());
+  $('loading').addEventListener('click', enterGate);   // 'click' conta como gesto do utilizador no Android; 'pointerdown' não
   if (!running) { running = true; last = performance.now(); requestAnimationFrame(frame); }
 }
 
@@ -628,7 +629,7 @@ setInterval(() => setWake(state === 'play' && !document.hidden), 1500);
 // Gancho para testes automáticos
 window.__game = { get state() { return state; }, get score() { return score; }, get lives() { return lives; },
   get drops() { return drops; }, get kev() { return kev; }, start: startGame,
-  get music() { return curMusic; }, get bucketX() { return kev.x + (BUCKET_CX - 0.5) * kevW(); }, get W() { return W; }, get H() { return H; }, get narrow() { return narrow; }, get feet() { return KEV_FEET; }, get kevH() { return KEV_H; }, get brW() { return BR_W; } };
+  get music() { return curMusic; }, get mus() { return MUS; }, get bucketX() { return kev.x + (BUCKET_CX - 0.5) * kevW(); }, get W() { return W; }, get H() { return H; }, get narrow() { return narrow; }, get feet() { return KEV_FEET; }, get kevH() { return KEV_H; }, get brW() { return BR_W; } };
 })();
 </script>
 </body>

@@ -5,7 +5,7 @@ HTML + CSS + JavaScript puro, sem dependências.
 
 ## Jogar
 
-Abre `index.html` num browser (ou serve a pasta, por exemplo `python3 -m http.server`). Adapta-se ao ecrã: telemóvel em vertical ou horizontal, tablet e computador.
+Abre `index.html` num browser (ou serve a pasta, por exemplo `python3 -m http.server`). Joga-se só na horizontal (em vertical aparece um aviso para rodar o telemóvel).
 No ecrã de entrada toca/clica para ativar o som.
 
 | Ação | Teclado | Telemóvel |
