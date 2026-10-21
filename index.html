@@ -172,6 +172,16 @@ const BUCKET_CX = 0.497, BUCKET_RIM_Y = 0.031, BUCKET_HALF_W = 0.205;
 const LIVES = 5;
 const CATCH_PER_LEVEL = 10;
 
+// Colunas de som do cenário (assets/palco.jpg, 1672x941): centro e raio de cada uma, em pixels
+// da imagem original. Usadas para desenhar um brilho a pulsar por cima, ao ritmo da música.
+const SPEAKERS = [
+  { x: 345,  y: 395, r: 85  },   // pilha grande, esquerda
+  { x: 1330, y: 395, r: 85  },   // pilha grande, direita
+  { x: 95,   y: 745, r: 95  },   // monitora no chão, frente esquerda
+  { x: 1580, y: 745, r: 95  }    // monitora no chão, frente direita
+];
+let bgLeft = 0, bgTop = 0, bgScale = 1;
+
 const $ = id => document.getElementById(id);
 const wrap = $('wrap'), cv = $('cv'), ctx = cv.getContext('2d');
 const hud = $('hud');
@@ -240,6 +250,7 @@ function resize() {
   const s = Math.max(W / 1672, H / 941), bw = 1672 * s, bh = 941 * s, bg = $('bg');
   bg.style.left = ((W - bw) / 2) + 'px'; bg.style.top = (H - bh) + 'px';
   bg.style.width = bw + 'px'; bg.style.height = bh + 'px';
+  bgLeft = (W - bw) / 2; bgTop = H - bh; bgScale = s;
   KEV_FEET = H - bh + 779 * s;
   FLOOR_Y = H - bh + 797 * s;
   X_MIN = narrow ? 52 : 70; X_MAX = W - X_MIN;
@@ -543,8 +554,34 @@ function drawDrop(d) {
   ctx.restore();
 }
 
+// Brilho dourado a pulsar sobre as colunas de som do cenário, ao ritmo da "batida";
+// mais vivo durante o jogo, acalma no menu/pausa e acelera um pouco com o nível.
+let clock = 0; // relógio próprio, sempre a correr (menu, pausa ou jogo), para animar as colunas
+function drawSpeakers() {
+  const bpm = 100 + (state === 'play' ? (level - 1) * 4 : 0);
+  const beat = (clock * bpm / 60) % 1;
+  const pulse = Math.pow(1 - beat, 2.2);              // pancada rápida, a desvanecer
+  const base = state === 'play' ? 0.75 : 0.35;
+  const amp = state === 'play' ? 0.9 : 0.35;
+  const glow = base + amp * pulse;
+  for (const sp of SPEAKERS) {
+    const cx = bgLeft + sp.x * bgScale, cy = bgTop + sp.y * bgScale, r = sp.r * bgScale * (1 + 0.22 * pulse);
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grad.addColorStop(0,    `rgba(255,236,170,${Math.min(1, 0.95 * glow)})`);
+    grad.addColorStop(0.35, `rgba(255,205,90,${Math.min(1, 0.65 * glow)})`);
+    grad.addColorStop(0.7,  `rgba(244,150,25,${Math.min(1, 0.3 * glow)})`);
+    grad.addColorStop(1,    'rgba(244,150,25,0)');
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
 function draw() {
   ctx.clearRect(0, 0, W, H);
+  drawSpeakers();
   for (const s of splats) {
     ctx.save(); ctx.globalAlpha = Math.max(0, s.life) * 0.7;
     ctx.fillStyle = '#4a2410';
@@ -580,6 +617,7 @@ function draw() {
 let last = performance.now(), running = false;
 function frame(now) {
   const dt = Math.min((now - last) / 1000, 0.05); last = now;
+  clock += dt;
   if (state !== 'pause') update(dt);
   draw();
   requestAnimationFrame(frame);
