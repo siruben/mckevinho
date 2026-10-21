@@ -106,14 +106,14 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
     <div class="panel">
       <div class="kicker">MC KEVINHO</div>
       <h1>CHUVA DE<br><em>BRIGADEIRO</em></h1>
-      <p>Apanha os brigadeiros no balde. Se deixares cair três, acabou o baile!</p>
+      <p>Apanha os brigadeiros com o MC Kevinho. Se deixares cair cinco, acabou o baile!</p>
       <div class="how">
         <span class="kb"><b>Teclado:</b> ← → ou A / D &nbsp;·&nbsp; <b>Pausa:</b> P ou Esc<br></span>
         <b>Toque:</b> toca ou arrasta o dedo no ecrã
       </div>
       <button class="btn start-btn" id="btnPlay" type="button" aria-label="Entrar no jogo">
         <span class="icon" aria-hidden="true"></span>
-        <span>TOCA PARA ENTRAR</span>
+        <span id="btnPlayLabel">TOCA PARA ENTRAR</span>
       </button>
       <div class="best" id="bestMenu"></div>
       <button class="btn ghost" id="btnInstall" hidden style="margin:14px 0 0">INSTALAR NO TELEMÓVEL</button>
@@ -156,7 +156,8 @@ const SRC = {
   brig: "assets/brigadeiro.png",
   mIntro: "audio/intro-cai-brigadeiro.mp3",
   mGame: "audio/musica-mc-kevinho.mp3",
-  mOver: "audio/game-over-brigadeiros.m4a"
+  mOver: "audio/game-over-brigadeiros.m4a",
+  mOverFallback: "audio/game-over-brigadeiros.webm"
 };
 
 let W = 1280, H = 720;
@@ -168,7 +169,8 @@ let FLOOR_Y = 610;
 const BR_W = 54 * SIZE;
 let X_MIN = 70, X_MAX = W - 70;
 const BUCKET_CX = 0.497, BUCKET_RIM_Y = 0.031, BUCKET_HALF_W = 0.205;
-const LIVES = 3;
+const LIVES = 5;
+const CATCH_PER_LEVEL = 10;
 
 const $ = id => document.getElementById(id);
 const wrap = $('wrap'), cv = $('cv'), ctx = cv.getContext('2d');
@@ -300,7 +302,7 @@ function pauseGame() { if (state !== 'play') return; state = 'pause'; show('sPau
 function resumeGame() { if (state !== 'pause') return; state = 'play'; show(null); last = performance.now(); playMusic('game', false); }
 function toMenu() {
   state = 'menu'; hud.classList.remove('on'); show('sMenu'); $('bestMenu').textContent = best ? 'Melhor pontuação: ' + best : '';
-  if (audioReady) playMusic('intro', true);
+  if (audioReady) { playMusic('intro', true); $('btnPlayLabel').textContent = 'JOGAR'; }
 }
 
 function gameOver() {
@@ -313,7 +315,10 @@ function gameOver() {
   setTimeout(() => { if (state === 'over') show('sOver'); }, 650);
 }
 
-$('btnPlay').onclick = () => { audioInit(); unlockMusic(); startGame(); };
+$('btnPlay').onclick = () => {
+  if (!audioReady) { enterMenu(); $('btnPlayLabel').textContent = 'JOGAR'; return; }  // 1º toque: desbloqueia o som e toca a intro
+  startGame();                                                                         // toque seguinte: entra no jogo
+};
 $('btnAgain').onclick = startGame;
 $('btnResume').onclick = resumeGame;
 $('btnQuit').onclick = toMenu;
@@ -331,7 +336,9 @@ window.addEventListener('keydown', e => {
   else if (k === 'ArrowRight' || k === 'd' || k === 'D') { keys.r = true; e.preventDefault(); }
   else if (k === 'p' || k === 'P' || k === 'Escape') { state === 'pause' ? resumeGame() : pauseGame(); }
   else if (k === 'Enter' || k === ' ') {
-    if (state === 'menu' || state === 'over') { audioInit(); unlockMusic(); startGame(); } else if (state === 'pause') resumeGame();
+    if (state === 'menu') { if (!audioReady) { enterMenu(); $('btnPlayLabel').textContent = 'JOGAR'; } else startGame(); }
+    else if (state === 'over') startGame();
+    else if (state === 'pause') resumeGame();
     e.preventDefault();
   }
 });
@@ -351,11 +358,18 @@ wrap.addEventListener('pointermove', e => { if (ptr.down) ptr.x = ptrX(e); });
 ['pointerup', 'pointercancel'].forEach(t => wrap.addEventListener(t, () => { ptr.down = false; }));
 
 let muted = false, audioReady = false, curMusic = null;
-function mk(src, loop, vol) { const a = new Audio(src); a.loop = loop; a.volume = vol; a.preload = 'auto'; return a; }
+// src pode ser um URL só ou uma lista [URL, URL de reserva]: o <audio> escolhe o primeiro que conseguir tocar.
+function mk(src, loop, vol) {
+  const a = new Audio(); a.loop = loop; a.volume = vol; a.preload = 'auto';
+  const list = Array.isArray(src) ? src : [src];
+  list.forEach(u => { if (u) a.appendChild(Object.assign(document.createElement('source'), { src: u })); });
+  a.load();
+  return a;
+}
 const MUS = {
   intro: mk(SRC.mIntro, true, 0.8),
   game: mk(SRC.mGame, true, 0.5),
-  over: mk(SRC.mOver, false, 0.9)
+  over: mk([SRC.mOver, SRC.mOverFallback], false, 0.9)
 };
 function playMusic(name, restart) {
   for (const k in MUS) if (k !== name) MUS[k].pause();
@@ -372,8 +386,10 @@ function retryMusic() {
   if (a.paused && !a.ended) { a.muted = muted; const pr = a.play(); if (pr && pr.catch) pr.catch(() => {}); }
 }
 ['click', 'keydown', 'pointerup', 'touchend'].forEach(ev => window.addEventListener(ev, retryMusic, true));
+// Desbloqueia os sons que só vão tocar mais tarde (a intro toca já a seguir, não precisa disto
+// e tocar+pausar aqui ao mesmo tempo criava uma corrida que acabava por cortar a intro).
 function unlockMusic() {
-  ['intro', 'game', 'over'].forEach(k => {
+  ['game', 'over'].forEach(k => {
     const a = MUS[k]; a.muted = true;
     const pr = a.play();
     const done = () => { a.pause(); try { a.currentTime = 0; } catch (e) {} a.muted = muted; };
@@ -429,7 +445,7 @@ function onCatch(d) {
   score += gained;
   const comboUp = newMult > mult;
   mult = newMult;
-  const newLevel = 1 + Math.floor(caught / 8);
+  const newLevel = 1 + Math.floor(caught / CATCH_PER_LEVEL);
   const lvlUp = newLevel > level; level = newLevel;
   const cx = kev.x + (BUCKET_CX - 0.5) * kevW();
   burst(cx, kevTop() + BUCKET_RIM_Y * KEV_H, 10, '#ffd36b');
@@ -455,13 +471,18 @@ function update(dt) {
   const SPEED = 720;
   let dir = (keys.r ? 1 : 0) - (keys.l ? 1 : 0);
   if (state === 'play') {
-    if (dir) { kev.x += dir * SPEED * dt; }
+    if (dir) { kev.x += dir * SPEED * dt; ptr.active = false; }
     else if (ptr.active) {
-      const dx = ptr.x - kev.x, step = SPEED * 1.35 * dt;
-      if (Math.abs(dx) <= step) { kev.x += dx; if (!ptr.down) ptr.active = false; }
-      else kev.x += Math.sign(dx) * step;
+      if (ptr.down) {
+        // A arrastar: o Kevinho segue o dedo diretamente, sem atraso nem limite de velocidade
+        kev.x = ptr.x;
+      } else {
+        // Toque solto: desliza até ao ponto tocado
+        const dx = ptr.x - kev.x, step = SPEED * 1.8 * dt;
+        if (Math.abs(dx) <= step) { kev.x = ptr.x; ptr.active = false; }
+        else kev.x += Math.sign(dx) * step;
+      }
     }
-    if (dir) ptr.active = false;
     kev.x = Math.max(X_MIN, Math.min(X_MAX, kev.x));
   }
   const moving = state === 'play' && (dir || (ptr.active && Math.abs(ptr.x - kev.x) > 4));
@@ -473,12 +494,18 @@ function update(dt) {
   }
 
   const rimY = kevTop() + BUCKET_RIM_Y * KEV_H;
-  const halfCatch = BUCKET_HALF_W * kevW() + BR_W * 0.18;
+  const kw = kevW();
+  // Apanha-se tocando em qualquer parte do personagem (corpo inteiro), não só na boca do balde:
+  // janela horizontal larga, à volta do centro do Kevinho, e vertical do topo da cabeça aos pés.
+  const halfCatch = kw * 0.5 + BR_W * 0.5;
+  const bodyTop = kevTop(), bodyBottom = KEV_FEET;
   for (const d of drops) {
     if (d.state === 'fall') {
       const prev = d.y;
       d.y += d.vy * dt; d.rot += d.vr * dt;
-      if (state === 'play' && prev + BR_W * 0.25 <= rimY && d.y + BR_W * 0.25 >= rimY && Math.abs(d.x - (kev.x + (BUCKET_CX - 0.5) * kevW())) <= halfCatch) {
+      const withinBody = d.y + BR_W * 0.3 >= bodyTop && d.y - BR_W * 0.3 <= bodyBottom;
+      const withinX = Math.abs(d.x - kev.x) <= halfCatch;
+      if (state === 'play' && withinBody && withinX) {
         d.state = 'in'; d.t = 0; d.sx = d.x; d.sy = d.y;
         onCatch(d);
       } else if (d.y >= FLOOR_Y) {
@@ -564,9 +591,17 @@ function ready() {
   state = 'menu';
   show('sMenu');
   $('loading').style.display = 'none';
-  audioReady = true;
   $('bestMenu').textContent = best ? 'Melhor pontuação: ' + best : '';
   if (!running) { running = true; last = performance.now(); requestAnimationFrame(frame); }
+}
+// A intro só pode tocar depois de um gesto do utilizador (regra do browser); o botão
+// "TOCA PARA ENTRAR" é esse gesto — assim que é tocado, desbloqueia o áudio e arranca a intro.
+function enterMenu() {
+  if (audioReady) return;
+  audioReady = true;
+  audioInit();
+  playMusic('intro', true);
+  unlockMusic();
 }
 
 let installEvt = null;

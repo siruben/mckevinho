@@ -1,10 +1,11 @@
 /* Service worker: deixa o jogo funcionar offline. Sobe o número da versão a cada alteração. */
-const VERSION = 'chuva-brigadeiro-v2';
+const VERSION = 'chuva-brigadeiro-v3';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
   'assets/palco.jpg', 'assets/kevinho.png', 'assets/brigadeiro.png',
-  'audio/intro-cai-brigadeiro.mp3', 'audio/musica-mc-kevinho.mp3', 'audio/game-over-brigadeiros.m4a'
+  'audio/intro-cai-brigadeiro.mp3', 'audio/musica-mc-kevinho.mp3',
+  'audio/game-over-brigadeiros.m4a', 'audio/game-over-brigadeiros.webm'
 ];
 
 self.addEventListener('install', e => {
