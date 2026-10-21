@@ -188,10 +188,21 @@ let sc = 1, dpr = 1;
 /* ---------- Imagens ---------- */
 const img = {};
 let loaded = 0;
+let readyCalled = false;
+function markReady() {
+  if (readyCalled) return;
+  readyCalled = true;
+  ready();
+}
 function load(name, src) {
   const im = new Image();
-  im.onload = () => { if (++loaded === 3) ready(); };
-  im.src = src; img[name] = im;
+  im.onload = () => { if (++loaded >= 3) markReady(); };
+  im.onerror = () => {
+    console.warn('Falha ao carregar imagem:', src);
+    if (++loaded >= 3) markReady();
+  };
+  im.src = src;
+  img[name] = im;
 }
 $('bg').src = SRC.stage;
 load('stage', SRC.stage); load('kev', SRC.kev); load('brig', SRC.brig);
