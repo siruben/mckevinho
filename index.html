@@ -20,13 +20,10 @@
 html,body{margin:0;height:100%;background:#07050a;overflow:hidden;overscroll-behavior:none;touch-action:none;
   font-family:Impact,Haettenschweiler,"Arial Narrow Bold","Arial Black",sans-serif;color:#fff}
 
-/* Palco de design fixo 1280x720, escalado para caber no ecrã */
 #wrap{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center center;overflow:hidden;background:#000}
 #bg,#cv{position:absolute;left:0;top:0;display:block}
 #bg{pointer-events:none;max-width:none}
 #cv{touch-action:none}
-
-/* HUD (camada separada) */
 #hud{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .25s}
 #hud.on{opacity:1}
 .pill{position:absolute;background:rgba(10,7,12,.72);border:2px solid var(--gold);border-radius:14px;padding:6px 18px 4px;
@@ -51,8 +48,6 @@ html,body{margin:0;height:100%;background:#07050a;overflow:hidden;overscroll-beh
 #btnPause{right:28px}
 #btnMute{right:96px}
 #btnMute.off{color:#777;border-color:#555}
-
-/* Ecrãs */
 .screen{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(8,5,10,.55),rgba(8,5,10,.88));z-index:5}
 .screen.show{display:flex}
 .panel{width:620px;text-align:center;background:rgba(12,8,14,.88);border:3px solid var(--gold);border-radius:26px;padding:30px 36px 32px;
@@ -75,7 +70,6 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
 .rec{display:none;margin:0 auto 14px;width:max-content;font-size:22px;letter-spacing:3px;color:#1a1100;background:var(--gold);padding:4px 16px 2px;border-radius:8px}
 .rec.show{display:block}
 .best{font-family:Arial,sans-serif;font-size:15px;color:#aaa;margin-top:14px}
-
 .gate{text-align:center}
 .gk{font-size:30px;letter-spacing:6px;color:#f4b223}
 .gt{font-size:84px;line-height:.92;letter-spacing:2px;margin:6px 0 24px}
@@ -84,7 +78,6 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
 .start-btn{display:inline-flex;align-items:center;justify-content:center;gap:12px;padding:14px 26px;border:3px solid var(--gold);border-radius:20px;background:linear-gradient(180deg,#3b1d0a,#120b09);color:#fff;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.45),0 0 0 4px rgba(244,178,35,.2);font:inherit;font-size:22px;letter-spacing:4px;line-height:1.2;transition:transform .12s ease, box-shadow .12s ease}
 .start-btn:active{transform:translateY(2px) scale(.99)}
 .start-btn .icon{display:inline-block;width:38px;height:38px;background-image:url('assets/brigadeiro.png');background-size:contain;background-repeat:no-repeat;background-position:center;filter:drop-shadow(0 4px 8px rgba(0,0,0,.35));}
-/* Telemóvel em vertical: o palco fica mais alto e estreito, HUD e painéis compactos */
 @media (pointer:coarse){.kb{display:none}}
 #rotate{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;
   background:#07050a;text-align:center;padding:24px;font-size:32px;line-height:1.1;color:var(--gold2)}
@@ -100,7 +93,6 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
 <div id="wrap">
   <img id="bg" alt="" draggable="false">
   <canvas id="cv"></canvas>
-
   <div id="hud">
     <div class="pill" id="scoreBox"><small>PONTOS</small><b id="score">0</b></div>
     <div class="pill" id="lvlBox"><small>NÍVEL</small><b id="lvl">1</b></div>
@@ -152,34 +144,29 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
 
   <div id="loading" aria-live="polite">A CARREGAR…</div>
 </div>
-
-
 <div id="rotate"><div class="ph">📱</div>RODA O TELEMÓVEL<span>O jogo só se joga na horizontal.</span></div>
 
 <script>
 (() => {
 'use strict';
 
-/* ---------- Recursos (ficheiros originais, só redimensionados; transparência preservada) ---------- */
 const SRC = {
-  stage:  "assets/palco.jpg",
-  kev:    "assets/kevinho.png",
-  brig:   "assets/brigadeiro.png",
+  stage: "assets/palco.jpg",
+  kev: "assets/kevinho.png",
+  brig: "assets/brigadeiro.png",
   mIntro: "audio/intro-cai-brigadeiro.mp3",
-  mGame:  "audio/musica-mc-kevinho.mp3",
-  mOver:  "audio/game-over-brigadeiros.m4a"
+  mGame: "audio/musica-mc-kevinho.mp3",
+  mOver: "audio/game-over-brigadeiros.m4a"
 };
 
-/* ---------- Constantes ---------- */
-let W = 1280, H = 720;          // tamanho lógico do palco: adapta-se à proporção do ecrã
+let W = 1280, H = 720;
 let narrow = false;
-const SIZE = 0.7;             // escala global de Kevinho e brigadeiros (-30%)
-const KEV_H = 360 * SIZE;     // altura do personagem no palco
-let KEV_FEET = 596;           // onde pousam os pés (chão do palco), calculado em resize()
-let FLOOR_Y = 610;            // onde os brigadeiros "aterram" (falhanço)
-const BR_W = 54 * SIZE;       // largura do brigadeiro em jogo
+const SIZE = 0.7;
+const KEV_H = 360 * SIZE;
+let KEV_FEET = 596;
+let FLOOR_Y = 610;
+const BR_W = 54 * SIZE;
 let X_MIN = 70, X_MAX = W - 70;
-// Posição do balde dentro da imagem recortada do personagem (frações da largura/altura)
 const BUCKET_CX = 0.497, BUCKET_RIM_Y = 0.031, BUCKET_HALF_W = 0.205;
 const LIVES = 3;
 
@@ -188,47 +175,54 @@ const wrap = $('wrap'), cv = $('cv'), ctx = cv.getContext('2d');
 const hud = $('hud');
 let sc = 1, dpr = 1;
 
-/* ---------- Imagens ---------- */
 const img = {};
 let loaded = 0;
 let readyCalled = false;
 const assetsNeeded = 3;
+
 function finishBootIfNeeded() {
   if (readyCalled) return;
   readyCalled = true;
   ready();
 }
+
 function load(name, src) {
   const im = new Image();
   im.onload = () => {
     img[name] = im;
-    if (++loaded >= assetsNeeded) finishBootIfNeeded();
+    loaded += 1;
+    if (loaded >= assetsNeeded) finishBootIfNeeded();
   };
   im.onerror = () => {
-    console.warn('Falha ao carregar imagem:', src);
+    console.warn('Falha ao carregar asset:', src);
     img[name] = im;
-    if (++loaded >= assetsNeeded) finishBootIfNeeded();
+    loaded += 1;
+    if (loaded >= assetsNeeded) finishBootIfNeeded();
   };
   im.src = src;
   img[name] = im;
 }
-$('bg').src = SRC.stage;
-load('stage', SRC.stage); load('kev', SRC.kev); load('brig', SRC.brig);
 
-/* ---------- Escala responsiva ---------- */
-// O palco lógico adapta-se à proporção do ecrã: 16:9 ou mais largo na horizontal,
-// mais alto e estreito (432 de largura) num telemóvel em vertical. O cenário cobre tudo, alinhado em baixo.
+$('bg').src = SRC.stage;
+load('stage', SRC.stage);
+load('kev', SRC.kev);
+load('brig', SRC.brig);
+setTimeout(() => {
+  if (!readyCalled) finishBootIfNeeded();
+}, 1200);
+
 function viewportSize() {
   const vv = window.visualViewport;
   return { w: vv ? vv.width : window.innerWidth, h: vv ? vv.height : window.innerHeight };
 }
+
 function resize() {
   const { w: iw, h: ih } = viewportSize();
   const ratio = Math.min(2.2, Math.max(1.15, iw / Math.max(ih, 1)));
-  const oW = W, oH = H, wasNarrow = narrow;
-  H = 720; W = Math.round(H * ratio);          // jogo só na horizontal
+  const oW = W, oH = H;
+  H = 720; W = Math.round(H * ratio);
   narrow = false;
-  const portrait = ih > iw;                // em vertical mostra o aviso e pausa
+  const portrait = ih > iw;
   $('rotate').style.display = portrait ? 'flex' : 'none';
   if (portrait && state === 'play') pauseGame();
   sc = Math.min(iw / W, ih / H);
@@ -241,35 +235,32 @@ function resize() {
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   ctx.setTransform(sc * dpr, 0, 0, sc * dpr, 0, 0);
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-  // cenário (1672x941): escala "cover", centrado na horizontal e alinhado em baixo
   const s = Math.max(W / 1672, H / 941), bw = 1672 * s, bh = 941 * s, bg = $('bg');
   bg.style.left = ((W - bw) / 2) + 'px'; bg.style.top = (H - bh) + 'px';
   bg.style.width = bw + 'px'; bg.style.height = bh + 'px';
-  KEV_FEET = H - bh + 779 * s;       // chão do palco no cenário
-  FLOOR_Y  = H - bh + 797 * s;
+  KEV_FEET = H - bh + 779 * s;
+  FLOOR_Y = H - bh + 797 * s;
   X_MIN = narrow ? 52 : 70; X_MAX = W - X_MIN;
-  // se o ecrã mudou a meio do jogo, reposiciona o que já existe
   if (kev && (oW !== W || oH !== H)) {
     const fx = W / oW, fy = H / oH;
     kev.x *= fx;
     drops.forEach(d => { d.x *= fx; d.y *= fy; d.sx *= fx; d.sy *= fy; });
     parts = []; texts = []; splats = [];
-    if (narrow !== wasNarrow) pauseGame();
+    if (narrow !== false) pauseGame();
   }
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', () => setTimeout(resize, 150));
 if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
 
-/* ---------- Estado ---------- */
-let state = 'menu';             // menu | play | pause | over
+let state = 'menu';
 let kev, drops, parts, texts, splats;
 let score, caught, lives, streak, mult, level, spawnT, elapsed;
 let best = 0;
 try { best = +localStorage.getItem('chuva-brigadeiro-best') || 0; } catch (e) {}
 
 const keys = { l: false, r: false };
-let ptr = { down: false, active: false, x: W / 2 };   // active: Kevinho vai até ao ponto tocado, mesmo depois de levantar o dedo
+let ptr = { down: false, active: false, x: W / 2 };
 
 function resetGame() {
   kev = { x: W / 2, vx: 0, bob: 0 };
@@ -285,6 +276,7 @@ function buildLives() {
     box.appendChild(im);
   }
 }
+
 function updateHud() {
   $('score').textContent = score;
   $('lvl').textContent = level;
@@ -292,10 +284,10 @@ function updateHud() {
   [...$('lives').children].forEach((im, i) => im.classList.toggle('lost', i >= lives));
 }
 
-/* ---------- Ecrãs ---------- */
 function show(id) {
   ['sMenu', 'sPause', 'sOver'].forEach(s => $(s).classList.toggle('show', s === id));
 }
+
 function startGame() {
   audioInit();
   resetGame();
@@ -303,12 +295,14 @@ function startGame() {
   state = 'play';
   show(null); hud.classList.add('on');
 }
+
 function pauseGame() { if (state !== 'play') return; state = 'pause'; show('sPause'); MUS.game.pause(); }
 function resumeGame() { if (state !== 'pause') return; state = 'play'; show(null); last = performance.now(); playMusic('game', false); }
 function toMenu() {
   state = 'menu'; hud.classList.remove('on'); show('sMenu'); $('bestMenu').textContent = best ? 'Melhor pontuação: ' + best : '';
   if (audioReady) playMusic('intro', true);
 }
+
 function gameOver() {
   state = 'over';
   const rec = score > best && score > 0;
@@ -318,27 +312,21 @@ function gameOver() {
   playMusic('over', true);
   setTimeout(() => { if (state === 'over') show('sOver'); }, 650);
 }
-$('btnPlay').onclick = () => {
-  audioInit();
-  unlockMusic();
-  startGame();
-};
+
+$('btnPlay').onclick = () => { audioInit(); unlockMusic(); startGame(); };
 $('btnAgain').onclick = startGame;
 $('btnResume').onclick = resumeGame;
 $('btnQuit').onclick = toMenu;
 $('btnPause').onclick = () => state === 'pause' ? resumeGame() : pauseGame();
 $('btnMute').onclick = () => { muted = !muted; $('btnMute').classList.toggle('off', muted); for (const k in MUS) MUS[k].muted = muted; };
-['btnPlay','btnAgain','btnResume','btnQuit','btnPause','btnMute','btnInstall'].forEach(id =>
-  $(id).addEventListener('pointerdown', e => e.stopPropagation()));
+['btnPlay','btnAgain','btnResume','btnQuit','btnPause','btnMute','btnInstall'].forEach(id => $(id).addEventListener('pointerdown', e => e.stopPropagation()));
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { pauseGame(); pauseMusic(); }
   else if (state !== 'pause') resumeMusic();
 });
 
-/* ---------- Controlos ---------- */
 window.addEventListener('keydown', e => {
   const k = e.key;
-  if (gateOpen) { enterGate(); e.preventDefault(); return; }
   if (k === 'ArrowLeft' || k === 'a' || k === 'A') { keys.l = true; e.preventDefault(); }
   else if (k === 'ArrowRight' || k === 'd' || k === 'D') { keys.r = true; e.preventDefault(); }
   else if (k === 'p' || k === 'P' || k === 'Escape') { state === 'pause' ? resumeGame() : pauseGame(); }
@@ -362,13 +350,12 @@ wrap.addEventListener('pointerdown', e => { ptr.down = true; ptr.active = true; 
 wrap.addEventListener('pointermove', e => { if (ptr.down) ptr.x = ptrX(e); });
 ['pointerup', 'pointercancel'].forEach(t => wrap.addEventListener(t, () => { ptr.down = false; }));
 
-/* ---------- Música (ficheiros) ---------- */
 let muted = false, audioReady = false, curMusic = null;
 function mk(src, loop, vol) { const a = new Audio(src); a.loop = loop; a.volume = vol; a.preload = 'auto'; return a; }
 const MUS = {
-  intro: mk(SRC.mIntro, true, 0.8),    // menu inicial
-  game:  mk(SRC.mGame,  true, 0.5),    // durante o jogo
-  over:  mk(SRC.mOver,  false, 0.9)    // fim de jogo
+  intro: mk(SRC.mIntro, true, 0.8),
+  game: mk(SRC.mGame, true, 0.5),
+  over: mk(SRC.mOver, false, 0.9)
 };
 function playMusic(name, restart) {
   for (const k in MUS) if (k !== name) MUS[k].pause();
@@ -379,14 +366,12 @@ function playMusic(name, restart) {
 }
 function pauseMusic() { for (const k in MUS) MUS[k].pause(); }
 function resumeMusic() { if (curMusic) { const pr = MUS[curMusic].play(); if (pr && pr.catch) pr.catch(() => {}); } }
-// Se o browser recusou o arranque (sem gesto válido), tenta outra vez no próximo toque/tecla
 function retryMusic() {
   if (!audioReady || !curMusic || curMusic === 'over' || state === 'pause') return;
   const a = MUS[curMusic];
   if (a.paused && !a.ended) { a.muted = muted; const pr = a.play(); if (pr && pr.catch) pr.catch(() => {}); }
 }
 ['click', 'keydown', 'pointerup', 'touchend'].forEach(ev => window.addEventListener(ev, retryMusic, true));
-// Desbloqueia os sons que só vão tocar mais tarde (iOS/Android exigem um toque do utilizador)
 function unlockMusic() {
   ['intro', 'game', 'over'].forEach(k => {
     const a = MUS[k]; a.muted = true;
@@ -396,12 +381,12 @@ function unlockMusic() {
   });
 }
 
-/* ---------- Efeitos (sintetizados) ---------- */
 let ac = null;
 function audioInit() {
   if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
   try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ac = null; }
 }
+
 function beep(f0, f1, dur, type, vol) {
   if (!ac || muted) return;
   const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
@@ -416,26 +401,17 @@ function tone(kind) {
   else if (kind === 'level') { beep(440, 880, 0.25, 'square', 0.14); }
 }
 
-/* ---------- Lógica ---------- */
 const rnd = (a, b) => a + Math.random() * (b - a);
 const kevW = () => (img.kev && img.kev.width) ? KEV_H * img.kev.width / img.kev.height : 140;
 const kevTop = () => KEV_FEET - KEV_H;
 
 function difficulty() {
-  return {
-    speed: Math.min(140 + (level - 1) * 38, 560),   // nível 1: lento; chega ao máximo no nível 12
-    gap:   Math.max(1.5 - (level - 1) * 0.1, 0.42)
-  };
+  return { speed: Math.min(140 + (level - 1) * 38, 560), gap: Math.max(1.5 - (level - 1) * 0.1, 0.42) };
 }
 
 function spawn() {
   const d = difficulty();
-  drops.push({
-    x: rnd(X_MIN, X_MAX), y: -40,
-    vy: d.speed * rnd(0.88, 1.15),
-    rot: rnd(-0.4, 0.4), vr: rnd(-1.6, 1.6),
-    state: 'fall', t: 0, sx: 0, sy: 0
-  });
+  drops.push({ x: rnd(X_MIN, X_MAX), y: -40, vy: d.speed * rnd(0.88, 1.15), rot: rnd(-0.4, 0.4), vr: rnd(-1.6, 1.6), state: 'fall', t: 0, sx: 0, sy: 0 });
 }
 
 function burst(x, y, n, color) {
@@ -476,8 +452,6 @@ function onMiss(d) {
 function update(dt) {
   if (state !== 'play' && state !== 'over') return;
   elapsed += dt;
-
-  // Movimento horizontal do personagem
   const SPEED = 720;
   let dir = (keys.r ? 1 : 0) - (keys.l ? 1 : 0);
   if (state === 'play') {
@@ -493,21 +467,18 @@ function update(dt) {
   const moving = state === 'play' && (dir || (ptr.active && Math.abs(ptr.x - kev.x) > 4));
   kev.bob = moving ? kev.bob + dt * 16 : kev.bob * 0.85;
 
-  // Spawns
   if (state === 'play') {
     spawnT -= dt;
     if (spawnT <= 0) { spawn(); spawnT = difficulty().gap * rnd(0.8, 1.25); }
   }
 
-  // Queda e colisão com o balde
   const rimY = kevTop() + BUCKET_RIM_Y * KEV_H;
   const halfCatch = BUCKET_HALF_W * kevW() + BR_W * 0.18;
   for (const d of drops) {
     if (d.state === 'fall') {
       const prev = d.y;
       d.y += d.vy * dt; d.rot += d.vr * dt;
-      if (state === 'play' && prev + BR_W * 0.25 <= rimY && d.y + BR_W * 0.25 >= rimY
-          && Math.abs(d.x - (kev.x + (BUCKET_CX - 0.5) * kevW())) <= halfCatch) {
+      if (state === 'play' && prev + BR_W * 0.25 <= rimY && d.y + BR_W * 0.25 >= rimY && Math.abs(d.x - (kev.x + (BUCKET_CX - 0.5) * kevW())) <= halfCatch) {
         d.state = 'in'; d.t = 0; d.sx = d.x; d.sy = d.y;
         onCatch(d);
       } else if (d.y >= FLOOR_Y) {
@@ -524,7 +495,6 @@ function update(dt) {
   }
   drops = drops.filter(d => d.state !== 'dead');
 
-  // Partículas, textos, manchas
   for (const p of parts) { p.life -= dt; p.vy += 700 * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
   parts = parts.filter(p => p.life > 0);
   for (const t of texts) { t.life -= dt; t.y -= 46 * dt; }
@@ -533,9 +503,10 @@ function update(dt) {
   splats = splats.filter(s => s.life > 0);
 }
 
-/* ---------- Desenho ---------- */
 function drawDrop(d) {
-  const w = BR_W, h = w * (img.brig && img.brig.height ? img.brig.height : 1) / (img.brig && img.brig.width ? img.brig.width : 1);
+  const by = (img.brig && img.brig.height) ? img.brig.height : 1;
+  const bw = (img.brig && img.brig.width) ? img.brig.width : 1;
+  const w = BR_W, h = w * by / bw;
   let k = 1, a = 1;
   if (d.state === 'in') { k = 1 - 0.55 * Math.min(d.t, 1); a = 1 - 0.3 * Math.min(d.t, 1); }
   ctx.save();
@@ -547,40 +518,29 @@ function drawDrop(d) {
 
 function draw() {
   ctx.clearRect(0, 0, W, H);
-
-  // Manchas de chocolate no chão
   for (const s of splats) {
     ctx.save(); ctx.globalAlpha = Math.max(0, s.life) * 0.7;
     ctx.fillStyle = '#4a2410';
     ctx.beginPath(); ctx.ellipse(s.x, FLOOR_Y + 4, 26 * SIZE, 7 * SIZE, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
-
-  // Brigadeiros (atrás do personagem, para entrarem "dentro" do balde)
   for (const d of drops) drawDrop(d);
-
-  // Personagem (sem deformar: escala uniforme)
   if (kev && img.kev && img.kev.width) {
     const kw = kevW();
     const bob = Math.sin(kev.bob) * 3;
     ctx.save();
-    // sombra no chão
     ctx.globalAlpha = 0.35; ctx.fillStyle = '#000';
     ctx.beginPath(); ctx.ellipse(kev.x, KEV_FEET + 2, kw * 0.48, 10 * SIZE, 0, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1;
     ctx.drawImage(img.kev, kev.x - kw / 2, kevTop() - Math.abs(bob), kw, KEV_H);
     ctx.restore();
   }
-
-  // Partículas
   for (const p of parts) {
     ctx.globalAlpha = Math.max(0, p.life / p.max);
     ctx.fillStyle = p.c;
     ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
   }
   ctx.globalAlpha = 1;
-
-  // Textos flutuantes
   ctx.textAlign = 'center'; ctx.font = '40px Impact, "Arial Black", sans-serif';
   for (const t of texts) {
     ctx.globalAlpha = Math.min(1, t.life / 0.4);
@@ -590,7 +550,6 @@ function draw() {
   ctx.globalAlpha = 1;
 }
 
-/* ---------- Loop ---------- */
 let last = performance.now(), running = false;
 function frame(now) {
   const dt = Math.min((now - last) / 1000, 0.05); last = now;
@@ -599,7 +558,6 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-let gateOpen = false;
 function ready() {
   resize();
   resetGame();
@@ -611,25 +569,6 @@ function ready() {
   if (!running) { running = true; last = performance.now(); requestAnimationFrame(frame); }
 }
 
-// Em telemóveis: ecrã inteiro + bloqueio na horizontal (na app instalada o manifesto já trata disto)
-function goLandscape() {
-  try {
-    const installed = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
-    const touch = matchMedia('(pointer: coarse)').matches;
-    const fs = (!installed && touch && document.documentElement.requestFullscreen)
-      ? document.documentElement.requestFullscreen({ navigationUI: 'hide' }) : Promise.resolve();
-    Promise.resolve(fs).then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {});
-  } catch (e) {}
-}
-function enterGate() {
-  if (!gateOpen) return;
-  gateOpen = false; audioReady = true;
-  audioInit(); unlockMusic(); goLandscape();
-  $('loading').style.display = 'none';
-  toMenu();
-}
-
-/* ---------- App instalável (PWA) ---------- */
 let installEvt = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('btnInstall').hidden = false; });
 window.addEventListener('appinstalled', () => { installEvt = null; $('btnInstall').hidden = true; });
@@ -643,7 +582,6 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
 
-/* ---------- Ecrã sempre ligado durante o jogo ---------- */
 let wakeLock = null;
 async function setWake(on) {
   try {
@@ -655,12 +593,7 @@ async function setWake(on) {
 }
 setInterval(() => setWake(state === 'play' && !document.hidden), 1500);
 
-// Gancho para testes automáticos
-window.__game = { get state() { return state; }, get score() { return score; }, get lives() { return lives; },
-  get drops() { return drops; }, get kev() { return kev; }, start: startGame,
-  get music() { return curMusic; }, get mus() { return MUS; }, get bucketX() { return kev.x + (BUCKET_CX - 0.5) * kevW(); }, get W() { return W; }, get H() { return H; }, get narrow() { return narrow; },
-  get best() { return best; }, get caught() { return caught; }
-})();
+window.__game = { get state() { return state; }, get score() { return score; }, get lives() { return lives; }, get drops() { return drops; }, get kev() { return kev; }, start: startGame, get music() { return curMusic; }, get mus() { return MUS; }, get bucketX() { return kev.x + (BUCKET_CX - 0.5) * kevW(); }, get W() { return W; }, get H() { return H; }, get narrow() { return narrow; }, get best() { return best; }, get caught() { return caught; } };
 })();
 </script>
 </body>
