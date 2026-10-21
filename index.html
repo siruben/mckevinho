@@ -119,7 +119,10 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
         <span class="kb"><b>Teclado:</b> ← → ou A / D &nbsp;·&nbsp; <b>Pausa:</b> P ou Esc<br></span>
         <b>Toque:</b> toca ou arrasta o dedo no ecrã
       </div>
-      <button class="btn" id="btnPlay">JOGAR</button>
+      <button class="btn start-btn" id="btnPlay" type="button" aria-label="Entrar no jogo">
+        <span class="icon" aria-hidden="true"></span>
+        <span>TOCA PARA ENTRAR</span>
+      </button>
       <div class="best" id="bestMenu"></div>
       <button class="btn ghost" id="btnInstall" hidden style="margin:14px 0 0">INSTALAR NO TELEMÓVEL</button>
     </div>
@@ -147,7 +150,7 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
     </div>
   </div>
 
-  <div id="loading">A CARREGAR…</div>
+  <div id="loading" aria-live="polite">A CARREGAR…</div>
 </div>
 
 
@@ -189,17 +192,22 @@ let sc = 1, dpr = 1;
 const img = {};
 let loaded = 0;
 let readyCalled = false;
-function markReady() {
+const assetsNeeded = 3;
+function finishBootIfNeeded() {
   if (readyCalled) return;
   readyCalled = true;
   ready();
 }
 function load(name, src) {
   const im = new Image();
-  im.onload = () => { if (++loaded >= 3) markReady(); };
+  im.onload = () => {
+    img[name] = im;
+    if (++loaded >= assetsNeeded) finishBootIfNeeded();
+  };
   im.onerror = () => {
     console.warn('Falha ao carregar imagem:', src);
-    if (++loaded >= 3) markReady();
+    img[name] = im;
+    if (++loaded >= assetsNeeded) finishBootIfNeeded();
   };
   im.src = src;
   img[name] = im;
@@ -310,7 +318,11 @@ function gameOver() {
   playMusic('over', true);
   setTimeout(() => { if (state === 'over') show('sOver'); }, 650);
 }
-$('btnPlay').onclick = startGame;
+$('btnPlay').onclick = () => {
+  audioInit();
+  unlockMusic();
+  startGame();
+};
 $('btnAgain').onclick = startGame;
 $('btnResume').onclick = resumeGame;
 $('btnQuit').onclick = toMenu;
@@ -331,7 +343,7 @@ window.addEventListener('keydown', e => {
   else if (k === 'ArrowRight' || k === 'd' || k === 'D') { keys.r = true; e.preventDefault(); }
   else if (k === 'p' || k === 'P' || k === 'Escape') { state === 'pause' ? resumeGame() : pauseGame(); }
   else if (k === 'Enter' || k === ' ') {
-    if (state === 'menu' || state === 'over') startGame(); else if (state === 'pause') resumeGame();
+    if (state === 'menu' || state === 'over') { audioInit(); unlockMusic(); startGame(); } else if (state === 'pause') resumeGame();
     e.preventDefault();
   }
 });
@@ -406,7 +418,7 @@ function tone(kind) {
 
 /* ---------- Lógica ---------- */
 const rnd = (a, b) => a + Math.random() * (b - a);
-const kevW = () => KEV_H * img.kev.width / img.kev.height;
+const kevW = () => (img.kev && img.kev.width) ? KEV_H * img.kev.width / img.kev.height : 140;
 const kevTop = () => KEV_FEET - KEV_H;
 
 function difficulty() {
@@ -523,13 +535,13 @@ function update(dt) {
 
 /* ---------- Desenho ---------- */
 function drawDrop(d) {
-  const w = BR_W, h = w * img.brig.height / img.brig.width;
+  const w = BR_W, h = w * (img.brig && img.brig.height ? img.brig.height : 1) / (img.brig && img.brig.width ? img.brig.width : 1);
   let k = 1, a = 1;
   if (d.state === 'in') { k = 1 - 0.55 * Math.min(d.t, 1); a = 1 - 0.3 * Math.min(d.t, 1); }
   ctx.save();
   ctx.globalAlpha = a;
   ctx.translate(d.x, d.y); ctx.rotate(d.rot * 0.35); ctx.scale(k, k);
-  ctx.drawImage(img.brig, -w / 2, -h / 2, w, h);
+  if (img.brig && img.brig.width) ctx.drawImage(img.brig, -w / 2, -h / 2, w, h);
   ctx.restore();
 }
 
@@ -548,7 +560,7 @@ function draw() {
   for (const d of drops) drawDrop(d);
 
   // Personagem (sem deformar: escala uniforme)
-  if (kev) {
+  if (kev && img.kev && img.kev.width) {
     const kw = kevW();
     const bob = Math.sin(kev.bob) * 3;
     ctx.save();
@@ -588,6 +600,17 @@ function frame(now) {
 }
 
 let gateOpen = false;
+function ready() {
+  resize();
+  resetGame();
+  state = 'menu';
+  show('sMenu');
+  $('loading').style.display = 'none';
+  audioReady = true;
+  $('bestMenu').textContent = best ? 'Melhor pontuação: ' + best : '';
+  if (!running) { running = true; last = performance.now(); requestAnimationFrame(frame); }
+}
+
 // Em telemóveis: ecrã inteiro + bloqueio na horizontal (na app instalada o manifesto já trata disto)
 function goLandscape() {
   try {
@@ -604,27 +627,6 @@ function enterGate() {
   audioInit(); unlockMusic(); goLandscape();
   $('loading').style.display = 'none';
   toMenu();
-}
-function ready() {
-  resize(); resetGame();
-  audioReady = true;
-  audioInit();
-  unlockMusic();
-  state = 'menu'; show('sMenu'); $('bestMenu').textContent = best ? 'Melhor pontuação: ' + best : '';
-  $('loading').innerHTML = '<div class="gate"><div class="gk">MC KEVINHO</div>' +
-    '<div class="gt">CHUVA DE<br><span>BRIGADEIRO</span></div>' +
-    '<button id="startBtn" class="start-btn" type="button" aria-label="Entrar no jogo"><span class="icon" aria-hidden="true"></span><span>TOCA PARA ENTRAR</span></button></div>';
-  $('loading').style.cursor = 'pointer';
-  const startBtn = $('startBtn');
-  if (startBtn) {
-    startBtn.addEventListener('click', enterGate);
-    startBtn.addEventListener('pointerdown', e => e.stopPropagation());
-  }
-  $('loading').addEventListener('click', e => {
-    if (e.target === $('loading')) enterGate();
-  });
-  gateOpen = true;
-  if (!running) { running = true; last = performance.now(); requestAnimationFrame(frame); }
 }
 
 /* ---------- App instalável (PWA) ---------- */
