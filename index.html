@@ -13,8 +13,8 @@ html,body{margin:0;height:100%;background:#07050a;overflow:hidden;overscroll-beh
 
 /* Palco de design fixo 1280x720, escalado para caber no ecrã */
 #wrap{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center center;overflow:hidden;background:#000}
-#bg,#cv{position:absolute;left:0;top:0;width:1280px;height:720px;display:block}
-#bg{object-fit:cover;pointer-events:none}
+#bg,#cv{position:absolute;left:0;top:0;display:block}
+#bg{pointer-events:none;max-width:none}
 #cv{touch-action:none}
 
 /* HUD (camada separada) */
@@ -67,13 +67,40 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
 .rec.show{display:block}
 .best{font-family:Arial,sans-serif;font-size:15px;color:#aaa;margin-top:14px}
 
-/* Aviso de rotação em retrato (fora do palco) */
-#rotate{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;
-  background:rgba(7,5,10,.96);text-align:center;padding:24px;font-size:30px;color:var(--gold2)}
-#rotate span{font-family:Arial,sans-serif;font-size:16px;color:#bbb}
-#rotate .ph{font-size:64px;animation:rot 1.8s ease-in-out infinite}
-@keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
-#rotate button{font:inherit;font-size:20px;padding:8px 22px 6px;border-radius:12px;border:2px solid var(--gold);background:transparent;color:var(--gold2)}
+.gate{text-align:center}
+.gk{font-size:30px;letter-spacing:6px;color:#f4b223}
+.gt{font-size:84px;line-height:.92;letter-spacing:2px;margin:6px 0 30px}
+.gt span{color:#f4b223}
+.gb{font-size:28px;letter-spacing:5px;color:#ffd36b}
+/* Telemóvel em vertical: o palco fica mais alto e estreito, HUD e painéis compactos */
+#wrap.narrow #scoreBox{left:12px;top:12px;min-width:0;padding:4px 12px 3px}
+#wrap.narrow #scoreBox b{font-size:30px}
+#wrap.narrow .pill small{font-size:11px;letter-spacing:1.5px}
+#wrap.narrow #lvlBox{top:12px;min-width:0;padding:4px 12px 3px}
+#wrap.narrow #lvlBox b{font-size:30px}
+#wrap.narrow #comboBox{left:12px;top:76px}
+#wrap.narrow #comboBox b{font-size:22px}
+#wrap.narrow #lives{right:12px;top:76px;gap:5px;padding:5px 8px}
+#wrap.narrow #lives img{width:30px}
+#wrap.narrow .ibtn{top:12px;width:46px;height:46px;font-size:20px}
+#wrap.narrow #btnPause{right:12px}
+#wrap.narrow #btnMute{right:64px}
+#wrap.narrow .panel{width:calc(100% - 28px);padding:20px 16px 22px;border-radius:20px}
+#wrap.narrow .kicker{font-size:16px;letter-spacing:4px}
+#wrap.narrow h1{font-size:54px;margin-bottom:10px}
+#wrap.narrow h2{font-size:48px}
+#wrap.narrow .panel p{font-size:16px}
+#wrap.narrow .how{font-size:13px;line-height:1.55;padding:8px 10px}
+#wrap.narrow .btn{font-size:28px;padding:10px 28px 8px}
+#wrap.narrow .btn.ghost{font-size:18px;margin-left:6px;padding:7px 18px 5px}
+#wrap.narrow .stats{gap:14px}
+#wrap.narrow .stats b{font-size:34px}
+#wrap.narrow .stats small{font-size:11px;letter-spacing:2px}
+#wrap.narrow .rec{font-size:18px}
+#wrap.narrow .gk{font-size:18px;letter-spacing:4px}
+#wrap.narrow .gt{font-size:54px;margin-bottom:22px}
+#wrap.narrow .gb{font-size:20px;letter-spacing:3px}
+@media (pointer:coarse){.kb{display:none}}
 @keyframes blink{50%{opacity:.25}}
 .blink{animation:blink 1.2s infinite}
 #loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#07050a;z-index:9;font-size:28px;letter-spacing:4px;color:var(--gold)}
@@ -99,8 +126,8 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
       <h1>CHUVA DE<br><em>BRIGADEIRO</em></h1>
       <p>Apanha os brigadeiros no balde. Se deixares cair três, acabou o baile!</p>
       <div class="how">
-        <b>Teclado:</b> ← → ou A / D &nbsp;·&nbsp; <b>Pausa:</b> P ou Esc<br>
-        <b>Telemóvel:</b> toca ou arrasta o dedo no ecrã
+        <span class="kb"><b>Teclado:</b> ← → ou A / D &nbsp;·&nbsp; <b>Pausa:</b> P ou Esc<br></span>
+        <b>Toque:</b> toca ou arrasta o dedo no ecrã
       </div>
       <button class="btn" id="btnPlay">JOGAR</button>
       <div class="best" id="bestMenu"></div>
@@ -132,7 +159,6 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
   <div id="loading">A CARREGAR…</div>
 </div>
 
-<div id="rotate"><div class="ph">📱</div>Roda o telemóvel para jogar na horizontal<span>O palco é panorâmico e assim fica bem maior.</span><button id="rotOk">Jogar assim mesmo</button></div>
 
 <script>
 (() => {
@@ -149,13 +175,14 @@ const SRC = {
 };
 
 /* ---------- Constantes ---------- */
-const W = 1280, H = 720;
+let W = 1280, H = 720;          // tamanho lógico do palco: adapta-se à proporção do ecrã
+let narrow = false;
 const SIZE = 0.7;             // escala global de Kevinho e brigadeiros (-30%)
 const KEV_H = 360 * SIZE;     // altura do personagem no palco
-const KEV_FEET = 596;         // onde pousam os pés (chão do palco)
-const FLOOR_Y = 610;          // onde os brigadeiros "aterram" (falhanço)
+let KEV_FEET = 596;           // onde pousam os pés (chão do palco), calculado em resize()
+let FLOOR_Y = 610;            // onde os brigadeiros "aterram" (falhanço)
 const BR_W = 54 * SIZE;       // largura do brigadeiro em jogo
-const X_MIN = 70, X_MAX = W - 70;
+let X_MIN = 70, X_MAX = W - 70;
 // Posição do balde dentro da imagem recortada do personagem (frações da largura/altura)
 const BUCKET_CX = 0.497, BUCKET_RIM_Y = 0.031, BUCKET_HALF_W = 0.205;
 const LIVES = 3;
@@ -177,23 +204,43 @@ $('bg').src = SRC.stage;
 load('stage', SRC.stage); load('kev', SRC.kev); load('brig', SRC.brig);
 
 /* ---------- Escala responsiva ---------- */
+// O palco lógico adapta-se à proporção do ecrã: 16:9 ou mais largo na horizontal,
+// mais alto e estreito (432 de largura) num telemóvel em vertical. O cenário cobre tudo, alinhado em baixo.
 function resize() {
   const iw = window.innerWidth, ih = window.innerHeight;
+  const a = Math.max(0.38, Math.min(2.4, iw / ih));
+  const oW = W, oH = H, wasNarrow = narrow;
+  H = Math.round(Math.max(720, 432 / a)); W = Math.round(H * a);
+  narrow = W < 700;
   sc = Math.min(iw / W, ih / H);
   dpr = Math.min(window.devicePixelRatio || 1, 3);
+  wrap.style.width = W + 'px'; wrap.style.height = H + 'px';
+  wrap.classList.toggle('narrow', narrow);
   wrap.style.transform = `translate(-50%,-50%) scale(${sc})`;
   cv.width = Math.round(W * sc * dpr);
   cv.height = Math.round(H * sc * dpr);
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
   ctx.setTransform(sc * dpr, 0, 0, sc * dpr, 0, 0);
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-  const portrait = ih > iw && iw < 700;
-  $('rotate').style.display = (portrait && !rotDismissed) ? 'flex' : 'none';
+  // cenário (1672x941): escala "cover", centrado na horizontal e alinhado em baixo
+  const s = Math.max(W / 1672, H / 941), bw = 1672 * s, bh = 941 * s, bg = $('bg');
+  bg.style.left = ((W - bw) / 2) + 'px'; bg.style.top = (H - bh) + 'px';
+  bg.style.width = bw + 'px'; bg.style.height = bh + 'px';
+  KEV_FEET = H - bh + 779 * s;       // chão do palco no cenário
+  FLOOR_Y  = H - bh + 797 * s;
+  X_MIN = narrow ? 52 : 70; X_MAX = W - X_MIN;
+  // se o ecrã mudou a meio do jogo, reposiciona o que já existe
+  if (kev && (oW !== W || oH !== H)) {
+    const fx = W / oW, fy = H / oH;
+    kev.x *= fx;
+    drops.forEach(d => { d.x *= fx; d.y *= fy; d.sx *= fx; d.sy *= fy; });
+    parts = []; texts = []; splats = [];
+    if (narrow !== wasNarrow) pauseGame();
+  }
 }
-let rotDismissed = false;
-$('rotOk').onclick = () => { rotDismissed = true; resize(); };
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', () => setTimeout(resize, 150));
+if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
 
 /* ---------- Estado ---------- */
 let state = 'menu';             // menu | play | pause | over
@@ -346,7 +393,7 @@ const kevTop = () => KEV_FEET - KEV_H;
 
 function difficulty() {
   return {
-    speed: Math.min(210 + (level - 1) * 32, 560),
+    speed: Math.min(210 + (level - 1) * 32, 560) * (H / 720),
     gap:   Math.max(1.05 - (level - 1) * 0.07, 0.42)
   };
 }
@@ -382,7 +429,7 @@ function onCatch(d) {
   burst(cx, kevTop() + BUCKET_RIM_Y * KEV_H, 10, '#ffd36b');
   floatText(cx, kevTop() - 6, '+' + gained, '#ffd36b');
   tone(comboUp || lvlUp ? 'combo' : 'catch');
-  if (lvlUp) { floatText(W / 2, 150, 'NÍVEL ' + level + '!', '#ffffff'); tone('level'); }
+  if (lvlUp) { floatText(W / 2, Math.min(H * 0.28, 220), 'NÍVEL ' + level + '!', '#ffffff'); tone('level'); }
   if (comboUp) { const c = $('comboBox'); c.classList.remove('hot'); void c.offsetWidth; c.classList.add('hot'); }
   updateHud();
 }
@@ -531,9 +578,9 @@ function enterGate() {
 function ready() {
   resize(); resetGame();
   state = 'menu'; show('sMenu'); $('bestMenu').textContent = best ? 'Melhor pontuação: ' + best : '';
-  $('loading').innerHTML = '<div style="text-align:center"><div style="font-size:30px;letter-spacing:6px;color:#f4b223">MC KEVINHO</div>' +
-    '<div style="font-size:84px;line-height:.92;letter-spacing:2px;margin:6px 0 30px">CHUVA DE<br><span style="color:#f4b223">BRIGADEIRO</span></div>' +
-    '<div class="blink" style="font-size:28px;letter-spacing:5px;color:#ffd36b">TOCA PARA ENTRAR</div></div>';
+  $('loading').innerHTML = '<div class="gate"><div class="gk">MC KEVINHO</div>' +
+    '<div class="gt">CHUVA DE<br><span>BRIGADEIRO</span></div>' +
+    '<div class="blink gb">TOCA PARA ENTRAR</div></div>';
   $('loading').style.cursor = 'pointer';
   gateOpen = true;
   $('loading').addEventListener('pointerdown', e => { e.stopPropagation(); enterGate(); });
@@ -543,7 +590,7 @@ function ready() {
 // Gancho para testes automáticos
 window.__game = { get state() { return state; }, get score() { return score; }, get lives() { return lives; },
   get drops() { return drops; }, get kev() { return kev; }, start: startGame,
-  get music() { return curMusic; }, get bucketX() { return kev.x + (BUCKET_CX - 0.5) * kevW(); }, get kevH() { return KEV_H; }, get brW() { return BR_W; } };
+  get music() { return curMusic; }, get bucketX() { return kev.x + (BUCKET_CX - 0.5) * kevW(); }, get W() { return W; }, get H() { return H; }, get narrow() { return narrow; }, get feet() { return KEV_FEET; }, get kevH() { return KEV_H; }, get brW() { return BR_W; } };
 })();
 </script>
 </body>
