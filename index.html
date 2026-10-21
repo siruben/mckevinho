@@ -250,7 +250,7 @@ let best = 0;
 try { best = +localStorage.getItem('chuva-brigadeiro-best') || 0; } catch (e) {}
 
 const keys = { l: false, r: false };
-let ptr = { down: false, x: W / 2 };
+let ptr = { down: false, active: false, x: W / 2 };   // active: Kevinho vai até ao ponto tocado, mesmo depois de levantar o dedo
 
 function resetGame() {
   kev = { x: W / 2, vx: 0, bob: 0 };
@@ -335,7 +335,7 @@ function ptrX(e) {
   const r = wrap.getBoundingClientRect();
   return Math.max(0, Math.min(W, (e.clientX - r.left) / r.width * W));
 }
-wrap.addEventListener('pointerdown', e => { ptr.down = true; ptr.x = ptrX(e); try { wrap.setPointerCapture(e.pointerId); } catch (_) {} });
+wrap.addEventListener('pointerdown', e => { ptr.down = true; ptr.active = true; ptr.x = ptrX(e); try { wrap.setPointerCapture(e.pointerId); } catch (_) {} });
 wrap.addEventListener('pointermove', e => { if (ptr.down) ptr.x = ptrX(e); });
 ['pointerup', 'pointercancel'].forEach(t => wrap.addEventListener(t, () => { ptr.down = false; }));
 
@@ -452,13 +452,15 @@ function update(dt) {
   let dir = (keys.r ? 1 : 0) - (keys.l ? 1 : 0);
   if (state === 'play') {
     if (dir) { kev.x += dir * SPEED * dt; }
-    else if (ptr.down) {
+    else if (ptr.active) {
       const dx = ptr.x - kev.x, step = SPEED * 1.35 * dt;
-      kev.x += Math.abs(dx) <= step ? dx : Math.sign(dx) * step;
+      if (Math.abs(dx) <= step) { kev.x += dx; if (!ptr.down) ptr.active = false; }
+      else kev.x += Math.sign(dx) * step;
     }
+    if (dir) ptr.active = false;
     kev.x = Math.max(X_MIN, Math.min(X_MAX, kev.x));
   }
-  const moving = state === 'play' && (dir || (ptr.down && Math.abs(ptr.x - kev.x) > 4));
+  const moving = state === 'play' && (dir || (ptr.active && Math.abs(ptr.x - kev.x) > 4));
   kev.bob = moving ? kev.bob + dt * 16 : kev.bob * 0.85;
 
   // Spawns
