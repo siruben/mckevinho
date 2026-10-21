@@ -196,11 +196,15 @@ load('stage', SRC.stage); load('kev', SRC.kev); load('brig', SRC.brig);
 /* ---------- Escala responsiva ---------- */
 // O palco lógico adapta-se à proporção do ecrã: 16:9 ou mais largo na horizontal,
 // mais alto e estreito (432 de largura) num telemóvel em vertical. O cenário cobre tudo, alinhado em baixo.
+function viewportSize() {
+  const vv = window.visualViewport;
+  return { w: vv ? vv.width : window.innerWidth, h: vv ? vv.height : window.innerHeight };
+}
 function resize() {
-  const iw = window.innerWidth, ih = window.innerHeight;
-  const a = Math.max(1.2, Math.min(2.4, iw / ih));
+  const { w: iw, h: ih } = viewportSize();
+  const ratio = Math.min(2.2, Math.max(1.15, iw / Math.max(ih, 1)));
   const oW = W, oH = H, wasNarrow = narrow;
-  H = 720; W = Math.round(H * a);          // jogo só na horizontal
+  H = 720; W = Math.round(H * ratio);          // jogo só na horizontal
   narrow = false;
   const portrait = ih > iw;                // em vertical mostra o aviso e pausa
   $('rotate').style.display = portrait ? 'flex' : 'none';
@@ -358,7 +362,7 @@ function retryMusic() {
 ['click', 'keydown', 'pointerup', 'touchend'].forEach(ev => window.addEventListener(ev, retryMusic, true));
 // Desbloqueia os sons que só vão tocar mais tarde (iOS/Android exigem um toque do utilizador)
 function unlockMusic() {
-  ['game', 'over'].forEach(k => {
+  ['intro', 'game', 'over'].forEach(k => {
     const a = MUS[k]; a.muted = true;
     const pr = a.play();
     const done = () => { a.pause(); try { a.currentTime = 0; } catch (e) {} a.muted = muted; };
@@ -589,6 +593,9 @@ function enterGate() {
 }
 function ready() {
   resize(); resetGame();
+  audioReady = true;
+  audioInit();
+  unlockMusic();
   state = 'menu'; show('sMenu'); $('bestMenu').textContent = best ? 'Melhor pontuação: ' + best : '';
   $('loading').innerHTML = '<div class="gate"><div class="gk">MC KEVINHO</div>' +
     '<div class="gt">CHUVA DE<br><span>BRIGADEIRO</span></div>' +
@@ -629,7 +636,9 @@ setInterval(() => setWake(state === 'play' && !document.hidden), 1500);
 // Gancho para testes automáticos
 window.__game = { get state() { return state; }, get score() { return score; }, get lives() { return lives; },
   get drops() { return drops; }, get kev() { return kev; }, start: startGame,
-  get music() { return curMusic; }, get mus() { return MUS; }, get bucketX() { return kev.x + (BUCKET_CX - 0.5) * kevW(); }, get W() { return W; }, get H() { return H; }, get narrow() { return narrow; }, get feet() { return KEV_FEET; }, get kevH() { return KEV_H; }, get brW() { return BR_W; } };
+  get music() { return curMusic; }, get mus() { return MUS; }, get bucketX() { return kev.x + (BUCKET_CX - 0.5) * kevW(); }, get W() { return W; }, get H() { return H; }, get narrow() { return narrow; },
+  get best() { return best; }, get caught() { return caught; }
+})();
 })();
 </script>
 </body>
