@@ -1,3 +1,675 @@
-  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#07050a">
+<meta name="description" content="Apanha os brigadeiros com o MC Kevinho.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MC Kevinho Rush">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Chuva de Brigadeiro</title>
+<style>
+:root{--gold:#f4b223;--gold2:#ffd36b;--ink:#0d0a0f}
+[hidden]{display:none!important}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;background:#07050a;overflow:hidden;overscroll-behavior:none;touch-action:none;
+  font-family:Impact,Haettenschweiler,"Arial Narrow Bold","Arial Black",sans-serif;color:#fff}
+
+#wrap{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center center;overflow:hidden;background:#000}
+#bg,#cv{position:absolute;left:0;top:0;display:block}
+#bg{pointer-events:none;max-width:none}
+#cv{touch-action:none}
+#hud{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .25s}
+#hud.on{opacity:1}
+.pill{position:absolute;background:rgba(10,7,12,.72);border:2px solid var(--gold);border-radius:14px;padding:6px 18px 4px;
+  box-shadow:0 4px 14px rgba(0,0,0,.5);text-align:center;line-height:1}
+.pill small{display:block;font-size:13px;letter-spacing:2px;color:var(--gold2);opacity:.9}
+.pill b{font-weight:400;font-size:38px;color:#fff;letter-spacing:1px}
+#scoreBox{left:28px;top:20px;min-width:150px}
+#lvlBox{left:50%;top:20px;transform:translateX(-50%);min-width:110px}
+#comboBox{left:28px;top:98px;padding:4px 14px 3px}
+#comboBox b{font-size:24px;color:var(--gold2)}
+#comboBox.hot{animation:pop .25s}
+@keyframes pop{50%{transform:scale(1.25)}}
+#lives{position:absolute;right:28px;top:92px;display:flex;gap:8px;background:rgba(10,7,12,.72);border:2px solid var(--gold);
+  border-radius:14px;padding:6px 12px;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+#lives img{width:38px;height:auto;display:block;transition:filter .2s,opacity .2s,transform .2s}
+#lives img.lost{filter:grayscale(1) brightness(.5);opacity:.35;transform:scale(.85)}
+#lives.hit{animation:shake .35s}
+@keyframes shake{20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.ibtn{position:absolute;top:20px;width:56px;height:56px;border-radius:14px;border:2px solid var(--gold);background:rgba(10,7,12,.72);
+  color:var(--gold2);font:inherit;font-size:24px;pointer-events:auto;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.ibtn:active{transform:scale(.94)}
+#btnPause{right:28px}
+#btnMute{right:96px}
+#btnMute.off{color:#777;border-color:#555}
+.screen{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(8,5,10,.55),rgba(8,5,10,.88));z-index:5}
+.screen.show{display:flex}
+.panel{width:620px;text-align:center;background:rgba(12,8,14,.88);border:3px solid var(--gold);border-radius:26px;padding:30px 36px 32px;
+  box-shadow:0 0 0 6px rgba(0,0,0,.45),0 0 60px rgba(244,178,35,.25)}
+.kicker{font-size:22px;letter-spacing:6px;color:var(--gold)}
+h1{margin:6px 0 14px;font-weight:400;font-size:84px;line-height:.92;letter-spacing:2px;color:#fff;text-shadow:0 4px 0 #000,0 0 28px rgba(244,178,35,.45)}
+h1 em{font-style:normal;color:var(--gold)}
+h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--gold)}
+.panel p{margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:19px;line-height:1.35;color:#ddd}
+.how{font-family:Arial,Helvetica,sans-serif;font-size:16px;color:#bbb;line-height:1.7;margin:0 0 20px;padding:10px 14px;border:1px dashed rgba(244,178,35,.45);border-radius:12px}
+.how b{color:var(--gold2)}
+.btn{font:inherit;font-size:34px;letter-spacing:2px;padding:12px 44px 10px;border:0;border-radius:16px;cursor:pointer;color:#1a1100;
+  background:linear-gradient(#ffd36b,#f4b223);box-shadow:0 6px 0 #9a6a00,0 10px 22px rgba(0,0,0,.5)}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #9a6a00,0 4px 10px rgba(0,0,0,.5)}
+.btn.ghost{font-size:22px;background:transparent;color:var(--gold2);box-shadow:none;border:2px solid var(--gold);padding:8px 24px 6px;margin-left:10px}
+.stats{display:flex;justify-content:center;gap:34px;margin:6px 0 18px}
+.stats div{line-height:1}
+.stats small{display:block;font-size:14px;letter-spacing:3px;color:var(--gold2);margin-bottom:4px}
+.stats b{font-weight:400;font-size:54px}
+.rec{display:none;margin:0 auto 14px;width:max-content;font-size:22px;letter-spacing:3px;color:#1a1100;background:var(--gold);padding:4px 16px 2px;border-radius:8px}
+.rec.show{display:block}
+.best{font-family:Arial,sans-serif;font-size:15px;color:#aaa;margin-top:14px}
+.gate{text-align:center}
+.gk{font-size:30px;letter-spacing:6px;color:#f4b223}
+.gt{font-size:84px;line-height:.92;letter-spacing:2px;margin:6px 0 24px}
+.gt span{color:#f4b223}
+.gb{font-size:28px;letter-spacing:5px;color:#ffd36b}
+.start-btn{display:inline-flex;align-items:center;justify-content:center;gap:12px;padding:14px 26px;border:3px solid var(--gold);border-radius:20px;background:linear-gradient(180deg,#3b1d0a,#120b09);color:#fff;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.45),0 0 0 4px rgba(244,178,35,.2);font:inherit;font-size:22px;letter-spacing:4px;line-height:1.2;transition:transform .12s ease, box-shadow .12s ease}
+.start-btn:active{transform:translateY(2px) scale(.99)}
+.start-btn .icon{display:inline-block;width:38px;height:38px;background-image:url('assets/brigadeiro.png');background-size:contain;background-repeat:no-repeat;background-position:center;filter:drop-shadow(0 4px 8px rgba(0,0,0,.35));}
+@media (pointer:coarse){.kb{display:none}}
+#rotate{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  background:#07050a;text-align:center;padding:24px;font-size:32px;line-height:1.1;color:var(--gold2)}
+#rotate span{font-family:Arial,sans-serif;font-size:16px;color:#bbb}
+#rotate .ph{font-size:72px;animation:rot 1.8s ease-in-out infinite}
+@keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+@keyframes blink{50%{opacity:.25}}
+.blink{animation:blink 1.2s infinite}
+#loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#07050a;z-index:9;font-size:28px;letter-spacing:4px;color:var(--gold)}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <img id="bg" alt="" draggable="false">
+  <canvas id="cv"></canvas>
+  <div id="hud">
+    <div class="pill" id="scoreBox"><small>PONTOS</small><b id="score">0</b></div>
+    <div class="pill" id="lvlBox"><small>NÍVEL</small><b id="lvl">1</b></div>
+    <div class="pill" id="comboBox"><small>COMBO</small><b id="combo">x1</b></div>
+    <div id="lives"></div>
+    <button class="ibtn" id="btnMute" aria-label="Som">♪</button>
+    <button class="ibtn" id="btnPause" aria-label="Pausa">❚❚</button>
+  </div>
+
+  <div class="screen show" id="sMenu">
+    <div class="panel">
+      <div class="kicker">MC KEVINHO</div>
+      <h1>CHUVA DE<br><em>BRIGADEIRO</em></h1>
+      <p>Apanha os brigadeiros com o MC Kevinho. Se deixares cair cinco, acabou o baile!</p>
+      <div class="how">
+        <span class="kb"><b>Teclado:</b> ← → ou A / D &nbsp;·&nbsp; <b>Pausa:</b> P ou Esc<br></span>
+        <b>Toque:</b> toca ou arrasta o dedo no ecrã
+      </div>
+      <button class="btn start-btn" id="btnPlay" type="button" aria-label="Entrar no jogo">
+        <span class="icon" aria-hidden="true"></span>
+        <span id="btnPlayLabel">TOCA PARA ENTRAR</span>
+      </button>
+      <div class="best" id="bestMenu"></div>
+      <button class="btn ghost" id="btnInstall" hidden style="margin:14px 0 0">INSTALAR NO TELEMÓVEL</button>
+    </div>
+  </div>
+
+  <div class="screen" id="sPause">
+    <div class="panel">
+      <h2>PAUSA</h2>
+      <p>O baile está em espera.</p>
+      <button class="btn" id="btnResume">CONTINUAR</button>
+      <button class="btn ghost" id="btnQuit">SAIR</button>
+    </div>
+  </div>
+
+  <div class="screen" id="sOver">
+    <div class="panel">
+      <h2>FIM DE JOGO</h2>
+      <div class="rec" id="newRec">NOVO RECORDE!</div>
+      <div class="stats">
+        <div><small>PONTOS</small><b id="fScore">0</b></div>
+        <div><small>MELHOR</small><b id="fBest">0</b></div>
+        <div><small>APANHADOS</small><b id="fCaught">0</b></div>
+      </div>
+      <button class="btn" id="btnAgain">JOGAR OUTRA VEZ</button>
+    </div>
+  </div>
+
+  <div id="loading" aria-live="polite">A CARREGAR…</div>
+</div>
+<div id="rotate"><div class="ph">📱</div>RODA O TELEMÓVEL<span>O jogo só se joga na horizontal.</span></div>
+
+<script>
+(() => {
+'use strict';
+
+const SRC = {
+  stage: "assets/palco.jpg",
+  kev: "assets/kevinho.png",
+  brig: "assets/brigadeiro.png",
+  mIntro: "audio/intro-cai-brigadeiro.mp3",
+  mGame: "audio/musica-mc-kevinho.mp3",
+  mOver: "audio/game-over-brigadeiros.m4a",
+  mOverFallback: "audio/game-over-brigadeiros.webm"
+};
+
+let W = 1280, H = 720;
+let narrow = false;
+const SIZE = 0.7;
+const KEV_H = 360 * SIZE;
+let KEV_FEET = 596;
+let FLOOR_Y = 610;
+const BR_W = 54 * SIZE;
+let X_MIN = 70, X_MAX = W - 70;
+const BUCKET_CX = 0.497, BUCKET_RIM_Y = 0.031, BUCKET_HALF_W = 0.205;
+const LIVES = 5;
+const CATCH_PER_LEVEL = 10;
+
+// Colunas de som do cenário (assets/palco.jpg, 1672x941): centro e raio de cada uma, em pixels
+// da imagem original. Usadas para desenhar um brilho a pulsar por cima, ao ritmo da música.
+const SPEAKERS = [
+  { x: 345,  y: 395, r: 85  },   // pilha grande, esquerda
+  { x: 1330, y: 395, r: 85  },   // pilha grande, direita
+
+];
+let bgLeft = 0, bgTop = 0, bgScale = 1;
+
+const $ = id => document.getElementById(id);
+const wrap = $('wrap'), cv = $('cv'), ctx = cv.getContext('2d');
+const hud = $('hud');
+let sc = 1, dpr = 1;
+
+const img = {};
+let loaded = 0;
+let readyCalled = false;
+const assetsNeeded = 3;
+
+function finishBootIfNeeded() {
+  if (readyCalled) return;
+  readyCalled = true;
+  ready();
+}
+
+function load(name, src) {
+  const im = new Image();
+  im.onload = () => {
+    img[name] = im;
+    loaded += 1;
+    if (loaded >= assetsNeeded) finishBootIfNeeded();
+  };
+  im.onerror = () => {
+    console.warn('Falha ao carregar asset:', src);
+    img[name] = im;
+    loaded += 1;
+    if (loaded >= assetsNeeded) finishBootIfNeeded();
+  };
+  im.src = src;
+  img[name] = im;
+}
+
+$('bg').src = SRC.stage;
+load('stage', SRC.stage);
+load('kev', SRC.kev);
+load('brig', SRC.brig);
+setTimeout(() => {
+  if (!readyCalled) finishBootIfNeeded();
+}, 1200);
+
+function viewportSize() {
+  const vv = window.visualViewport;
+  return { w: vv ? vv.width : window.innerWidth, h: vv ? vv.height : window.innerHeight };
+}
+
+function resize() {
+  const { w: iw, h: ih } = viewportSize();
+  const ratio = Math.min(2.2, Math.max(1.15, iw / Math.max(ih, 1)));
+  const oW = W, oH = H;
+  H = 720; W = Math.round(H * ratio);
+  narrow = false;
+  const portrait = ih > iw;
+  $('rotate').style.display = portrait ? 'flex' : 'none';
+  if (portrait && state === 'play') pauseGame();
+  sc = Math.min(iw / W, ih / H);
+  dpr = Math.min(window.devicePixelRatio || 1, 3);
+  wrap.style.width = W + 'px'; wrap.style.height = H + 'px';
+  wrap.classList.toggle('narrow', narrow);
+  wrap.style.transform = `translate(-50%,-50%) scale(${sc})`;
+  cv.width = Math.round(W * sc * dpr);
+  cv.height = Math.round(H * sc * dpr);
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  ctx.setTransform(sc * dpr, 0, 0, sc * dpr, 0, 0);
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  const s = Math.max(W / 1672, H / 941), bw = 1672 * s, bh = 941 * s, bg = $('bg');
+  bg.style.left = ((W - bw) / 2) + 'px'; bg.style.top = (H - bh) + 'px';
+  bg.style.width = bw + 'px'; bg.style.height = bh + 'px';
+  bgLeft = (W - bw) / 2; bgTop = H - bh; bgScale = s;
+  KEV_FEET = H - bh + 779 * s;
+  FLOOR_Y = H - bh + 797 * s;
+  X_MIN = narrow ? 52 : 70; X_MAX = W - X_MIN;
+  if (kev && (oW !== W || oH !== H)) {
+    const fx = W / oW, fy = H / oH;
+    kev.x *= fx;
+    drops.forEach(d => { d.x *= fx; d.y *= fy; d.sx *= fx; d.sy *= fy; });
+    parts = []; texts = []; splats = [];
+    if (narrow !== false) pauseGame();
   }
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 150));
+if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+
+let state = 'menu';
+let kev, drops, parts, texts, splats;
+let score, caught, lives, streak, mult, level, spawnT, elapsed;
+let best = 0;
+try { best = +localStorage.getItem('chuva-brigadeiro-best') || 0; } catch (e) {}
+
+const keys = { l: false, r: false };
+let ptr = { down: false, active: false, x: W / 2 };
+
+function resetGame() {
+  kev = { x: W / 2, vx: 0, bob: 0 };
+  drops = []; parts = []; texts = []; splats = [];
+  score = 0; caught = 0; lives = LIVES; streak = 0; mult = 1; level = 1; spawnT = 0.6; elapsed = 0;
+  buildLives(); updateHud();
+}
+
+function buildLives() {
+  const box = $('lives'); box.innerHTML = '';
+  for (let i = 0; i < LIVES; i++) {
+    const im = document.createElement('img'); im.src = SRC.brig; im.alt = ''; im.draggable = false;
+    box.appendChild(im);
+  }
+}
+
+function updateHud() {
+  $('score').textContent = score;
+  $('lvl').textContent = level;
+  $('combo').textContent = 'x' + mult;
+  [...$('lives').children].forEach((im, i) => im.classList.toggle('lost', i >= lives));
+}
+
+function show(id) {
+  ['sMenu', 'sPause', 'sOver'].forEach(s => $(s).classList.toggle('show', s === id));
+}
+
+function startGame() {
+  audioInit();
+  resetGame();
+  playMusic('game', true);
+  state = 'play';
+  show(null); hud.classList.add('on');
+}
+
+function pauseGame() { if (state !== 'play') return; state = 'pause'; show('sPause'); MUS.game.pause(); }
+function resumeGame() { if (state !== 'pause') return; state = 'play'; show(null); last = performance.now(); playMusic('game', false); }
+function toMenu() {
+  state = 'menu'; hud.classList.remove('on'); show('sMenu'); $('bestMenu').textContent = best ? 'Melhor pontuação: ' + best : '';
+  if (audioReady) { playMusic('intro', true); $('btnPlayLabel').textContent = 'JOGAR'; }
+}
+
+function gameOver() {
+  state = 'over';
+  const rec = score > best && score > 0;
+  if (rec) { best = score; try { localStorage.setItem('chuva-brigadeiro-best', best); } catch (e) {} }
+  $('fScore').textContent = score; $('fBest').textContent = best; $('fCaught').textContent = caught;
+  $('newRec').classList.toggle('show', rec);
+  playMusic('over', true);
+  setTimeout(() => { if (state === 'over') show('sOver'); }, 650);
+}
+
+$('btnPlay').onclick = () => {
+  if (!audioReady) { enterMenu(); $('btnPlayLabel').textContent = 'JOGAR'; return; }  // 1º toque: desbloqueia o som e toca a intro
+  startGame();                                                                         // toque seguinte: entra no jogo
+};
+$('btnAgain').onclick = startGame;
+$('btnResume').onclick = resumeGame;
+$('btnQuit').onclick = toMenu;
+$('btnPause').onclick = () => state === 'pause' ? resumeGame() : pauseGame();
+$('btnMute').onclick = () => { muted = !muted; $('btnMute').classList.toggle('off', muted); for (const k in MUS) MUS[k].muted = muted; };
+['btnPlay','btnAgain','btnResume','btnQuit','btnPause','btnMute','btnInstall'].forEach(id => $(id).addEventListener('pointerdown', e => e.stopPropagation()));
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { pauseGame(); pauseMusic(); }
+  else if (state !== 'pause') resumeMusic();
+});
+
+window.addEventListener('keydown', e => {
+  const k = e.key;
+  if (k === 'ArrowLeft' || k === 'a' || k === 'A') { keys.l = true; e.preventDefault(); }
+  else if (k === 'ArrowRight' || k === 'd' || k === 'D') { keys.r = true; e.preventDefault(); }
+  else if (k === 'p' || k === 'P' || k === 'Escape') { state === 'pause' ? resumeGame() : pauseGame(); }
+  else if (k === 'Enter' || k === ' ') {
+    if (state === 'menu') { if (!audioReady) { enterMenu(); $('btnPlayLabel').textContent = 'JOGAR'; } else startGame(); }
+    else if (state === 'over') startGame();
+    else if (state === 'pause') resumeGame();
+    e.preventDefault();
+  }
+});
+window.addEventListener('keyup', e => {
+  const k = e.key;
+  if (k === 'ArrowLeft' || k === 'a' || k === 'A') keys.l = false;
+  if (k === 'ArrowRight' || k === 'd' || k === 'D') keys.r = false;
+});
+window.addEventListener('blur', () => { keys.l = keys.r = false; ptr.down = false; });
+
+function ptrX(e) {
+  const r = wrap.getBoundingClientRect();
+  return Math.max(0, Math.min(W, (e.clientX - r.left) / r.width * W));
+}
+wrap.addEventListener('pointerdown', e => { ptr.down = true; ptr.active = true; ptr.x = ptrX(e); try { wrap.setPointerCapture(e.pointerId); } catch (_) {} });
+wrap.addEventListener('pointermove', e => { if (ptr.down) ptr.x = ptrX(e); });
+['pointerup', 'pointercancel'].forEach(t => wrap.addEventListener(t, () => { ptr.down = false; }));
+
+let muted = false, audioReady = false, curMusic = null;
+// src pode ser um URL só ou uma lista [URL, URL de reserva]: o <audio> escolhe o primeiro que conseguir tocar.
+function mk(src, loop, vol) {
+  const a = new Audio(); a.loop = loop; a.volume = vol; a.preload = 'auto';
+  const list = Array.isArray(src) ? src : [src];
+  list.forEach(u => { if (u) a.appendChild(Object.assign(document.createElement('source'), { src: u })); });
+  a.load();
+  return a;
+}
+const MUS = {
+  intro: mk(SRC.mIntro, true, 0.8),
+  game: mk(SRC.mGame, true, 0.5),
+  over: mk([SRC.mOver, SRC.mOverFallback], false, 0.9)
+};
+function playMusic(name, restart) {
+  for (const k in MUS) if (k !== name) MUS[k].pause();
+  const a = MUS[name]; curMusic = name;
+  if (restart) { try { a.currentTime = 0; } catch (e) {} }
+  a.muted = muted;
+  const pr = a.play(); if (pr && pr.catch) pr.catch(() => {});
+}
+function pauseMusic() { for (const k in MUS) MUS[k].pause(); }
+function resumeMusic() { if (curMusic) { const pr = MUS[curMusic].play(); if (pr && pr.catch) pr.catch(() => {}); } }
+function retryMusic() {
+  if (!audioReady || !curMusic || curMusic === 'over' || state === 'pause') return;
+  const a = MUS[curMusic];
+  if (a.paused && !a.ended) { a.muted = muted; const pr = a.play(); if (pr && pr.catch) pr.catch(() => {}); }
+}
+['click', 'keydown', 'pointerup', 'touchend'].forEach(ev => window.addEventListener(ev, retryMusic, true));
+// Desbloqueia os sons que só vão tocar mais tarde (a intro toca já a seguir, não precisa disto
+// e tocar+pausar aqui ao mesmo tempo criava uma corrida que acabava por cortar a intro).
+function unlockMusic() {
+  ['game', 'over'].forEach(k => {
+    const a = MUS[k]; a.muted = true;
+    const pr = a.play();
+    const done = () => { a.pause(); try { a.currentTime = 0; } catch (e) {} a.muted = muted; };
+    if (pr && pr.then) pr.then(done, () => { a.muted = muted; }); else done();
+  });
+}
+
+let ac = null;
+function audioInit() {
+  if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ac = null; }
+}
+
+function beep(f0, f1, dur, type, vol) {
+  if (!ac || muted) return;
+  const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+function tone(kind) {
+  if (kind === 'catch') { beep(520, 880, 0.12, 'triangle', 0.22); }
+  else if (kind === 'combo') { beep(660, 1320, 0.2, 'square', 0.12); }
+  else if (kind === 'miss') { beep(180, 60, 0.28, 'sawtooth', 0.2); }
+  else if (kind === 'level') { beep(440, 880, 0.25, 'square', 0.14); }
+}
+
+const rnd = (a, b) => a + Math.random() * (b - a);
+const kevW = () => (img.kev && img.kev.width) ? KEV_H * img.kev.width / img.kev.height : 140;
+const kevTop = () => KEV_FEET - KEV_H;
+
+function difficulty() {
+  return { speed: Math.min(140 + (level - 1) * 38, 560), gap: Math.max(1.5 - (level - 1) * 0.1, 0.42) };
+}
+
+function spawn() {
+  const d = difficulty();
+  drops.push({ x: rnd(X_MIN, X_MAX), y: -40, vy: d.speed * rnd(0.88, 1.15), rot: rnd(-0.4, 0.4), vr: rnd(-1.6, 1.6), state: 'fall', t: 0, sx: 0, sy: 0 });
+}
+
+function burst(x, y, n, color) {
+  for (let i = 0; i < n; i++) {
+    const a = rnd(-Math.PI, 0), s = rnd(80, 260) * (0.6 + SIZE * 0.4);
+    parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(.35, .7), max: .7, c: color, r: rnd(2, 4.5) * SIZE + 0.6 });
+  }
+}
+function floatText(x, y, str, color) { texts.push({ x, y, str, life: .9, c: color }); }
+
+function onCatch(d) {
+  caught++; streak++;
+  const newMult = Math.min(1 + Math.floor(streak / 5), 5);
+  const gained = 10 * mult;
+  score += gained;
+  const comboUp = newMult > mult;
+  mult = newMult;
+  const newLevel = 1 + Math.floor(caught / CATCH_PER_LEVEL);
+  const lvlUp = newLevel > level; level = newLevel;
+  const cx = kev.x + (BUCKET_CX - 0.5) * kevW();
+  burst(cx, kevTop() + BUCKET_RIM_Y * KEV_H, 10, '#ffd36b');
+  floatText(cx, kevTop() - 6, '+' + gained, '#ffd36b');
+  tone(comboUp || lvlUp ? 'combo' : 'catch');
+  if (lvlUp) { floatText(W / 2, Math.min(H * 0.28, 220), 'NÍVEL ' + level + '!', '#ffffff'); tone('level'); }
+  if (comboUp) { const c = $('comboBox'); c.classList.remove('hot'); void c.offsetWidth; c.classList.add('hot'); }
+  updateHud();
+}
+function onMiss(d) {
+  lives--; streak = 0; mult = 1;
+  splats.push({ x: d.x, life: .9 });
+  burst(d.x, FLOOR_Y, 8, '#6b3a1d');
+  tone('miss');
+  const l = $('lives'); l.classList.remove('hit'); void l.offsetWidth; l.classList.add('hit');
+  updateHud();
+  if (lives <= 0) gameOver();
+}
+
+function update(dt) {
+  if (state !== 'play' && state !== 'over') return;
+  elapsed += dt;
+  const SPEED = 720;
+  let dir = (keys.r ? 1 : 0) - (keys.l ? 1 : 0);
+  if (state === 'play') {
+    if (dir) { kev.x += dir * SPEED * dt; ptr.active = false; }
+    else if (ptr.active) {
+      if (ptr.down) {
+        // A arrastar: o Kevinho segue o dedo diretamente, sem atraso nem limite de velocidade
+        kev.x = ptr.x;
+      } else {
+        // Toque solto: desliza até ao ponto tocado
+        const dx = ptr.x - kev.x, step = SPEED * 1.8 * dt;
+        if (Math.abs(dx) <= step) { kev.x = ptr.x; ptr.active = false; }
+        else kev.x += Math.sign(dx) * step;
+      }
+    }
+    kev.x = Math.max(X_MIN, Math.min(X_MAX, kev.x));
+  }
+  const moving = state === 'play' && (dir || (ptr.active && Math.abs(ptr.x - kev.x) > 4));
+  kev.bob = moving ? kev.bob + dt * 16 : kev.bob * 0.85;
+
+  if (state === 'play') {
+    spawnT -= dt;
+    if (spawnT <= 0) { spawn(); spawnT = difficulty().gap * rnd(0.8, 1.25); }
+  }
+
+  const rimY = kevTop() + BUCKET_RIM_Y * KEV_H;
+  const kw = kevW();
+  // Apanha-se tocando em qualquer parte do personagem (corpo inteiro), não só na boca do balde:
+  // janela horizontal larga, à volta do centro do Kevinho, e vertical do topo da cabeça aos pés.
+  const halfCatch = kw * 0.5 + BR_W * 0.5;
+  const bodyTop = kevTop(), bodyBottom = KEV_FEET;
+  for (const d of drops) {
+    if (d.state === 'fall') {
+      const prev = d.y;
+      d.y += d.vy * dt; d.rot += d.vr * dt;
+      const withinBody = d.y + BR_W * 0.3 >= bodyTop && d.y - BR_W * 0.3 <= bodyBottom;
+      const withinX = Math.abs(d.x - kev.x) <= halfCatch;
+      if (state === 'play' && withinBody && withinX) {
+        d.state = 'in'; d.t = 0; d.sx = d.x; d.sy = d.y;
+        onCatch(d);
+      } else if (d.y >= FLOOR_Y) {
+        d.state = 'dead';
+        if (state === 'play') onMiss(d);
+      }
+    } else if (d.state === 'in') {
+      d.t += dt / 0.14;
+      const bx = kev.x + (BUCKET_CX - 0.5) * kevW();
+      d.x = d.sx + (bx - d.sx) * Math.min(d.t, 1);
+      d.y = d.sy + (rimY + 16 * SIZE - d.sy) * Math.min(d.t, 1);
+      if (d.t >= 1) d.state = 'dead';
+    }
+  }
+  drops = drops.filter(d => d.state !== 'dead');
+
+  for (const p of parts) { p.life -= dt; p.vy += 700 * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
+  parts = parts.filter(p => p.life > 0);
+  for (const t of texts) { t.life -= dt; t.y -= 46 * dt; }
+  texts = texts.filter(t => t.life > 0);
+  for (const s of splats) s.life -= dt;
+  splats = splats.filter(s => s.life > 0);
+}
+
+function drawDrop(d) {
+  const by = (img.brig && img.brig.height) ? img.brig.height : 1;
+  const bw = (img.brig && img.brig.width) ? img.brig.width : 1;
+  const w = BR_W, h = w * by / bw;
+  let k = 1, a = 1;
+  if (d.state === 'in') { k = 1 - 0.55 * Math.min(d.t, 1); a = 1 - 0.3 * Math.min(d.t, 1); }
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.translate(d.x, d.y); ctx.rotate(d.rot * 0.35); ctx.scale(k, k);
+  if (img.brig && img.brig.width) ctx.drawImage(img.brig, -w / 2, -h / 2, w, h);
+  ctx.restore();
+}
+
+// Brilho dourado a pulsar sobre as colunas de som do cenário, ao ritmo da "batida";
+// mais vivo durante o jogo, acalma no menu/pausa e acelera um pouco com o nível.
+let clock = 0; // relógio próprio, sempre a correr (menu, pausa ou jogo), para animar as colunas
+function drawSpeakers() {
+  const bpm = 100 + (state === 'play' ? (level - 1) * 4 : 0);
+  const beat = (clock * bpm / 60) % 1;
+  const pulse = Math.pow(1 - beat, 2.2);              // pancada rápida, a desvanecer
+  const base = state === 'play' ? 0.75 : 0.35;
+  const amp = state === 'play' ? 0.9 : 0.35;
+  const glow = base + amp * pulse;
+  for (const sp of SPEAKERS) {
+    const cx = bgLeft + sp.x * bgScale, cy = bgTop + sp.y * bgScale, r = sp.r * bgScale * (1 + 0.22 * pulse);
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grad.addColorStop(0,    `rgba(255,236,170,${Math.min(1, 0.5 * glow)})`);
+    grad.addColorStop(0.35, `rgba(255,205,90,${Math.min(1, 0.3 * glow)})`);
+    grad.addColorStop(0.7,  `rgba(244,150,25,${Math.min(1, 0.1 * glow)})`);
+    grad.addColorStop(1,    'rgba(244,150,25,0)');
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  drawSpeakers();
+  for (const s of splats) {
+    ctx.save(); ctx.globalAlpha = Math.max(0, s.life) * 0.7;
+    ctx.fillStyle = '#4a2410';
+    ctx.beginPath(); ctx.ellipse(s.x, FLOOR_Y + 4, 26 * SIZE, 7 * SIZE, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  for (const d of drops) drawDrop(d);
+  if (kev && img.kev && img.kev.width) {
+    const kw = kevW();
+    const bob = Math.sin(kev.bob) * 3;
+    ctx.save();
+    ctx.globalAlpha = 0.35; ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.ellipse(kev.x, KEV_FEET + 2, kw * 0.48, 10 * SIZE, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.drawImage(img.kev, kev.x - kw / 2, kevTop() - Math.abs(bob), kw, KEV_H);
+    ctx.restore();
+  }
+  for (const p of parts) {
+    ctx.globalAlpha = Math.max(0, p.life / p.max);
+    ctx.fillStyle = p.c;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'center'; ctx.font = '40px Impact, "Arial Black", sans-serif';
+  for (const t of texts) {
+    ctx.globalAlpha = Math.min(1, t.life / 0.4);
+    ctx.lineWidth = 6; ctx.strokeStyle = '#000'; ctx.strokeText(t.str, t.x, t.y);
+    ctx.fillStyle = t.c; ctx.fillText(t.str, t.x, t.y);
+  }
+  ctx.globalAlpha = 1;
+}
+
+let last = performance.now(), running = false;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.05); last = now;
+  clock += dt;
+  if (state !== 'pause') update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+
+function ready() {
+  resize();
+  resetGame();
+  state = 'menu';
+  show('sMenu');
+  $('loading').style.display = 'none';
+  $('bestMenu').textContent = best ? 'Melhor pontuação: ' + best : '';
+  if (!running) { running = true; last = performance.now(); requestAnimationFrame(frame); }
+}
+// A intro só pode tocar depois de um gesto do utilizador (regra do browser); o botão
+// "TOCA PARA ENTRAR" é esse gesto — assim que é tocado, desbloqueia o áudio e arranca a intro.
+function enterMenu() {
+  if (audioReady) return;
+  audioReady = true;
+  audioInit();
+  playMusic('intro', true);
+  // Só desbloqueia os sons "game"/"over" depois de a intro já estar mesmo a tocar: nalguns
+  // telemóveis, tocar vários <audio> ao mesmo tempo faz o Android cortar o primeiro ao fim
+  // de pouco tempo (foi isto que cortava a intro aos poucos segundos).
+  setTimeout(unlockMusic, 1200);
+}
+
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('btnInstall').hidden = false; });
+window.addEventListener('appinstalled', () => { installEvt = null; $('btnInstall').hidden = true; });
+$('btnInstall').onclick = async () => {
+  if (!installEvt) return;
+  installEvt.prompt();
+  try { await installEvt.userChoice; } catch (e) {}
+  installEvt = null; $('btnInstall').hidden = true;
+};
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
+let wakeLock = null;
+async function setWake(on) {
+  try {
+    if (on && 'wakeLock' in navigator && !wakeLock) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
+  } catch (e) { wakeLock = null; }
+}
+setInterval(() => setWake(state === 'play' && !document.hidden), 1500);
+
+window.__game = { get state() { return state; }, get score() { return score; }, get lives() { return lives; }, get drops() { return drops; }, get kev() { return kev; }, start: startGame, get music() { return curMusic; }, get mus() { return MUS; }, get bucketX() { return kev.x + (BUCKET_CX - 0.5) * kevW(); }, get W() { return W; }, get H() { return H; }, get narrow() { return narrow; }, get best() { return best; }, get caught() { return caught; } };
+})();
+</script>
+</body>
+</html>
