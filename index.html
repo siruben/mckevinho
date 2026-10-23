@@ -638,7 +638,10 @@ function enterMenu() {
   audioReady = true;
   audioInit();
   playMusic('intro', true);
-  unlockMusic();
+  // Só desbloqueia os sons "game"/"over" depois de a intro já estar mesmo a tocar: nalguns
+  // telemóveis, tocar vários <audio> ao mesmo tempo faz o Android cortar o primeiro ao fim
+  // de pouco tempo (foi isto que cortava a intro aos poucos segundos).
+  setTimeout(unlockMusic, 1200);
 }
 
 let installEvt = null;
