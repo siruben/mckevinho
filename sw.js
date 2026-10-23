@@ -1,7 +1,7 @@
 /* Service worker: deixa o jogo funcionar offline. Sobe o número da versão a cada alteração. */
-const VERSION = 'chuva-brigadeiro-v6';
+const VERSION = 'chuva-brigadeiro-v7';
 const FILES = [
-  './', 'index.html', 'manifest.webmanifest',
+  './', 'index.html', 'manifest.json',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
   'assets/palco.jpg', 'assets/kevinho.png', 'assets/brigadeiro.png',
   'audio/intro-cai-brigadeiro.mp3', 'audio/musica-mc-kevinho.mp3',

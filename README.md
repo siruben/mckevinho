@@ -54,7 +54,7 @@ O jogo é uma app instalável: abre o endereço do GitHub Pages no Chrome do And
 **⋮ → Instalar app** (ou o botão "Instalar no telemóvel" do menu). Fica no ecrã inicial,
 abre em ecrã inteiro e funciona sem internet.
 
-- `manifest.webmanifest`: nome, ícones e modo de ecrã inteiro
+- `manifest.json`: nome, ícones e modo de ecrã inteiro
 - `sw.js`: cache offline (sobe `VERSION` a cada alteração para as atualizações chegarem aos telemóveis)
 - `icons/`: ícones feitos a partir do brigadeiro aprovado
 - O ficheiro único em `dist/` **não** é instalável (precisa de ser servido por https).
