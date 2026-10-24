@@ -1,5 +1,5 @@
 /* Service worker: deixa o jogo funcionar offline. Sobe o número da versão a cada alteração. */
-const VERSION = 'chuva-brigadeiro-v7';
+const VERSION = 'chuva-brigadeiro-v8';
 const FILES = [
   './', 'index.html', 'manifest.json',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
