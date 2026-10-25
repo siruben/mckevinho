@@ -8,7 +8,6 @@
   "scope": "https://siruben.github.io/mckevinho/",
   "display": "standalone",
   "display_override": ["standalone"],
-  "orientation": "landscape",
   "background_color": "#07050a",
   "theme_color": "#07050a",
   "categories": ["games", "entertainment"],
