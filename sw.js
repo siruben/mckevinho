@@ -1,5 +1,5 @@
 /* Service worker: deixa o jogo funcionar offline. Sobe o número da versão a cada alteração. */
-const VERSION = 'chuva-brigadeiro-v8';
+const VERSION = 'chuva-brigadeiro-v9';
 const FILES = [
   './', 'index.html', 'manifest.json',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
@@ -37,8 +37,10 @@ self.addEventListener('fetch', e => {
 
   // Página: tenta a rede (para apanhar atualizações) e cai para a cache se estiver offline
   if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).then(r => { const copy = r.clone(); caches.open(VERSION).then(c => c.put('index.html', copy)); return r; })
-      .catch(() => caches.match('index.html')));
+    e.respondWith(
+      fetch(req).then(r => { const copy = r.clone(); caches.open(VERSION).then(c => c.put('index.html', copy)); return r; })
+        .catch(() => caches.match('index.html', { ignoreSearch: true }).then(r => r || caches.match('./', { ignoreSearch: true })))
+    );
     return;
   }
   // Resto: cache primeiro
