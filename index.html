@@ -337,7 +337,7 @@ function gameOver() {
   setTimeout(() => { if (state === 'over') show('sOver'); }, 650);
 }
 
-const INTRO_WAIT_MS = 3200; // tempo da barra "a carregar", para dar para ouvir um bocado da intro
+const INTRO_WAIT_MS = 5000; // tempo da barra "a carregar", para dar para ouvir um bocado da intro
 $('btnPlay').onclick = () => {
   if (!audioReady) {
     // 1º toque: desbloqueia o som, toca a intro, e mostra uma barra "a carregar" por uns
