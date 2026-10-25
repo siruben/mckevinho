@@ -55,6 +55,9 @@ html,body{margin:0;height:100%;background:#07050a;overflow:hidden;overscroll-beh
 .kicker{font-size:22px;letter-spacing:6px;color:var(--gold)}
 h1{margin:6px 0 14px;font-weight:400;font-size:84px;line-height:.92;letter-spacing:2px;color:#fff;text-shadow:0 4px 0 #000,0 0 28px rgba(244,178,35,.45)}
 h1 em{font-style:normal;color:var(--gold)}
+h1.title-main{margin:0 0 4px;font-size:58px}
+#sMenu .kicker{margin:0 0 14px;font-size:17px}
+#sMenu .cover{width:150px;height:150px;border-radius:22px;margin:0 auto 14px;display:block;box-shadow:0 8px 24px rgba(0,0,0,.5),0 0 0 3px rgba(244,178,35,.5)}
 h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--gold)}
 .panel p{margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:19px;line-height:1.35;color:#ddd}
 .how{font-family:Arial,Helvetica,sans-serif;font-size:16px;color:#bbb;line-height:1.7;margin:0 0 20px;padding:10px 14px;border:1px dashed rgba(244,178,35,.45);border-radius:12px}
@@ -78,6 +81,10 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
 .start-btn{display:inline-flex;align-items:center;justify-content:center;gap:12px;padding:14px 26px;border:3px solid var(--gold);border-radius:20px;background:linear-gradient(180deg,#3b1d0a,#120b09);color:#fff;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.45),0 0 0 4px rgba(244,178,35,.2);font:inherit;font-size:22px;letter-spacing:4px;line-height:1.2;transition:transform .12s ease, box-shadow .12s ease}
 .start-btn:active{transform:translateY(2px) scale(.99)}
 .start-btn .icon{display:inline-block;width:38px;height:38px;background-image:url('assets/brigadeiro.png');background-size:contain;background-repeat:no-repeat;background-position:center;filter:drop-shadow(0 4px 8px rgba(0,0,0,.35));}
+.loadingWrap{margin-top:18px}
+.loadingBar{width:100%;height:10px;border-radius:6px;background:rgba(255,255,255,.12);border:1px solid rgba(244,178,35,.4);overflow:hidden}
+.loadingBarFill{height:100%;width:0%;background:linear-gradient(90deg,#ffd36b,#f4b223);transition:width .1s linear}
+.loadingTxt{margin-top:8px;font-size:16px;letter-spacing:4px;color:var(--gold2);font-family:Arial,Helvetica,sans-serif}
 @media (pointer:coarse){.kb{display:none}}
 #rotate{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;
   background:#07050a;text-align:center;padding:24px;font-size:32px;line-height:1.1;color:var(--gold2)}
@@ -104,8 +111,9 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
 
   <div class="screen show" id="sMenu">
     <div class="panel">
-      <div class="kicker">MC KEVINHO</div>
-      <h1>CHUVA DE<br><em>BRIGADEIRO</em></h1>
+      <img class="cover" src="assets/capa-mc-kevinho-rush.jpg" alt="MC Kevinho Rush" draggable="false">
+      <h1 class="title-main">MC KEVINHO<br><em>RUSH</em></h1>
+      <div class="kicker">CHUVA DE BRIGADEIROS</div>
       <p>Apanha os brigadeiros com o MC Kevinho. Se deixares cair cinco, acabou o baile!</p>
       <div class="how">
         <span class="kb"><b>Teclado:</b> ← → ou A / D &nbsp;·&nbsp; <b>Pausa:</b> P ou Esc<br></span>
@@ -115,6 +123,10 @@ h2{margin:0 0 6px;font-weight:400;font-size:64px;letter-spacing:2px;color:var(--
         <span class="icon" aria-hidden="true"></span>
         <span id="btnPlayLabel">TOCA PARA ENTRAR</span>
       </button>
+      <div class="loadingWrap" id="menuLoading" hidden>
+        <div class="loadingBar"><div class="loadingBarFill" id="menuLoadingFill"></div></div>
+        <div class="loadingTxt">A CARREGAR…</div>
+      </div>
       <div class="best" id="bestMenu"></div>
       <button class="btn ghost" id="btnInstall" hidden style="margin:14px 0 0">INSTALAR NO TELEMÓVEL</button>
     </div>
@@ -325,8 +337,24 @@ function gameOver() {
   setTimeout(() => { if (state === 'over') show('sOver'); }, 650);
 }
 
+const INTRO_WAIT_MS = 3200; // tempo da barra "a carregar", para dar para ouvir um bocado da intro
 $('btnPlay').onclick = () => {
-  if (!audioReady) { enterMenu(); $('btnPlayLabel').textContent = 'JOGAR'; return; }  // 1º toque: desbloqueia o som e toca a intro
+  if (!audioReady) {
+    // 1º toque: desbloqueia o som, toca a intro, e mostra uma barra "a carregar" por uns
+    // segundos antes de deixar entrar — dá tempo para ouvir a música em vez de saltar logo.
+    enterMenu();
+    $('btnPlay').hidden = true;
+    const wrapEl = $('menuLoading'), fillEl = $('menuLoadingFill');
+    wrapEl.hidden = false;
+    fillEl.style.transition = 'none'; fillEl.style.width = '0%';
+    requestAnimationFrame(() => { fillEl.style.transition = `width ${INTRO_WAIT_MS}ms linear`; fillEl.style.width = '100%'; });
+    setTimeout(() => {
+      wrapEl.hidden = true;
+      $('btnPlay').hidden = false;
+      $('btnPlayLabel').textContent = 'JOGAR';
+    }, INTRO_WAIT_MS);
+    return;
+  }
   startGame();                                                                         // toque seguinte: entra no jogo
 };
 $('btnAgain').onclick = startGame;
