@@ -6,7 +6,7 @@ root = pathlib.Path(__file__).resolve().parent.parent
 html = (root / "index.html").read_text(encoding="utf-8")
 
 files = [
-    "assets/palco.jpg", "assets/kevinho.png", "assets/brigadeiro.png", "assets/capa-mc-kevinho-rush.jpg",
+    "assets/palco.jpg", "assets/kevinho.png", "assets/brigadeiro.png",
     "audio/intro-cai-brigadeiro.mp3", "audio/musica-mc-kevinho.mp3",
     "audio/game-over-brigadeiros.m4a", "audio/game-over-brigadeiros.webm",
 ]
